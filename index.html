@@ -3,51 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3efe7">
 <title>Drum Timing Trainer</title>
+<script>
+  // choose light/dark before the first paint, so the page does not flash
+  try { var t = (JSON.parse(localStorage.getItem('dtt.settings.v2') || '{}') || {}).theme; if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+</script>
 <style>
 :root {
   --bg: #f3efe7; --panel: #fffcf6; --panel-2: #ece5d8; --line: #ddd2bf;
-  --text: #211a12; --muted: #6f624f; --accent: #9c5f14; --on-accent: #fff7ec;
+  --text: #211a12; --muted: #6f624f; --accent: #9c5f14; --on-accent: #fff7ec; --accent-soft: rgba(156,95,20,.13);
   --good: #2f7d3b; --warn: #a86a0c; --bad: #b53c32; --band: rgba(47,125,59,.12);
+  --nav-h: 64px;
   color-scheme: light;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #16110c; --panel: #211911; --panel-2: #2a2017; --line: #3a2d20;
-    --text: #f2eadf; --muted: #a8998a; --accent: #e0a24f; --on-accent: #1b1208;
+    --text: #f2eadf; --muted: #a8998a; --accent: #e0a24f; --on-accent: #1b1208; --accent-soft: rgba(224,162,79,.16);
     --good: #6cc07a; --warn: #e3a857; --bad: #ea7a70; --band: rgba(108,192,122,.14);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #16110c; --panel: #211911; --panel-2: #2a2017; --line: #3a2d20;
-  --text: #f2eadf; --muted: #a8998a; --accent: #e0a24f; --on-accent: #1b1208;
+  --text: #f2eadf; --muted: #a8998a; --accent: #e0a24f; --on-accent: #1b1208; --accent-soft: rgba(224,162,79,.16);
   --good: #6cc07a; --warn: #e3a857; --bad: #ea7a70; --band: rgba(108,192,122,.14);
   color-scheme: dark;
 }
-html { scroll-padding-top: env(safe-area-inset-top, 0px); }
 *, *::before, *::after { box-sizing: inherit; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 }
+body.noscroll { overflow: hidden; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; touch-action: manipulation; }
 button:disabled { cursor: default; opacity: .45; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
 .num { font-variant-numeric: tabular-nums; }
+svg.ic { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
-.wrap { max-width: 480px; margin: 0 auto; padding: 18px 16px 36px; }
-.top h1 { font-size: 22px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -.01em; }
-.top p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+/* ---------- app bar ---------- */
+.appbar { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+.appbar-in { max-width: 520px; margin: 0 auto; height: 54px; display: flex; align-items: center; gap: 4px; padding: 0 6px 0 16px; }
+.appbar h1 { flex: 1; min-width: 0; margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: var(--text); display: grid; place-items: center; flex: 0 0 auto; }
+.icon-btn:active { background: var(--panel-2); }
+.recbanner { display: flex; align-items: center; gap: 8px; width: calc(100% - 24px); max-width: 496px; margin: 0 auto 8px; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--panel-2); color: var(--text); font-size: 14px; font-weight: 600; text-align: left; }
+.recbanner .go { margin-left: auto; color: var(--accent); }
+.rec-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); flex: 0 0 auto; animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .35; } }
 
+/* ---------- bottom tabs ---------- */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--panel); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabbar-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h); }
+.tabbar button { position: relative; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 2px 8px; font-size: 11.5px; font-weight: 600; min-width: 0; }
+.tabbar .ti { width: 56px; height: 30px; border-radius: 15px; display: grid; place-items: center; transition: background-color .15s ease; }
+.tabbar button.on { color: var(--text); }
+.tabbar button.on .ti { background: var(--accent-soft); color: var(--accent); }
+.tabbar .tdot { position: absolute; top: 7px; left: calc(50% + 14px); width: 9px; height: 9px; border-radius: 50%; background: var(--bad); border: 2px solid var(--panel); display: none; }
+.tabbar button.recording .tdot { display: block; }
+
+/* ---------- pages ---------- */
+.wrap { max-width: 520px; margin: 0 auto; padding: 14px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom, 0px)); }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
 h2 { font-size: 16px; margin: 0 0 8px; }
+.card > h2:first-child { margin-top: 0; }
 
 .problem { background: var(--panel); border: 2px solid var(--bad); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
 .problem h2 { color: var(--bad); }
@@ -57,93 +82,121 @@ h2 { font-size: 16px; margin: 0 0 8px; }
 .problem details { font-size: 13px; color: var(--muted); }
 .problem pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 6px 0 0; font-family: inherit; }
 
-.field + .field { margin-top: 14px; }
+.field + .field { margin-top: 10px; }
 .field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .seg { display: flex; gap: 3px; padding: 3px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; }
 .seg button { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--muted); padding: 9px 4px; border-radius: 8px; font-size: 14px; font-weight: 600; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg.small button { font-size: 13px; padding: 9px 2px; }
 
-.tempo-row { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 8px; }
-.round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 22px; line-height: 1; }
-.bpm-box { text-align: center; min-width: 88px; }
-.bpm { display: block; font-size: 30px; font-weight: 700; line-height: 1.1; }
-.bpm-unit { display: block; font-size: 12px; color: var(--muted); }
-input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+.tempo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.tempo-row .field-label { margin: 0; flex: 1; }
+.round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.bpm-box { display: flex; align-items: baseline; justify-content: center; gap: 4px; min-width: 96px; }
+.bpm { font-size: 30px; font-weight: 700; line-height: 1.1; }
+.bpm-unit { font-size: 13px; color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; height: 28px; }
 
-.status { text-align: center; color: var(--muted); font-size: 14px; min-height: 20px; margin: 0 0 10px; }
-.beats { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.runline { text-align: center; margin: 0 0 2px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.status { text-align: center; color: var(--muted); font-size: 14px; min-height: 20px; margin: 0 0 8px; }
+.status:empty { display: none; }
+#status { margin: 12px 0 0; }
+#stageStatus { color: var(--text); }
+.beats { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
 .beats span { width: 11px; height: 11px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); }
 .beats span:first-child { width: 13px; height: 13px; margin-top: -1px; }
 .beats span.on { background: var(--accent); border-color: var(--accent); }
 
-.dial { width: 172px; height: 172px; margin: 0 auto; border-radius: 50%; border: 7px solid var(--line); background: var(--panel-2);
+.dial { width: 150px; height: 150px; margin: 0 auto; border-radius: 50%; border: 7px solid var(--line); background: var(--panel-2);
   display: flex; flex-direction: column; align-items: center; justify-content: center; transition: border-color .12s ease, transform .09s ease; }
-.dial-value { font-size: 32px; font-weight: 700; line-height: 1.1; }
+.dial-value { font-size: 28px; font-weight: 700; line-height: 1.1; }
 .dial-label { font-size: 12.5px; color: var(--muted); margin-top: 2px; text-align: center; padding: 0 10px; }
 .dial.good { border-color: var(--good); } .dial.good .dial-value { color: var(--good); }
 .dial.warn { border-color: var(--warn); } .dial.warn .dial-value { color: var(--warn); }
 .dial.bad { border-color: var(--bad); } .dial.bad .dial-value { color: var(--bad); }
 .dial.pulse { transform: scale(1.035); }
-@media (prefers-reduced-motion: reduce) { .dial { transition: none; } .dial.pulse { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dial { transition: none; } .dial.pulse { transform: none; } .rec-dot { animation: none; } }
 
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin: 14px 0 12px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin: 10px 0 8px; }
 .stat-v { display: block; font-size: 18px; font-weight: 700; }
 .stat-l { display: block; font-size: 11.5px; color: var(--muted); }
-
-.meter { position: relative; height: 8px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; margin-bottom: 4px; }
-.meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--muted); opacity: .55; }
-.meter-mark { position: absolute; top: -1px; bottom: -1px; width: 2px; left: 50%; background: var(--accent); }
-.meter-cap { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
-
-canvas#chart { display: block; width: 100%; height: 96px; border-radius: 10px; background: var(--panel-2); }
+canvas#chart { display: block; width: 100%; height: 72px; border-radius: 10px; background: var(--panel-2); }
 .warn-line { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--warn); font-size: 13.5px; }
 
-.primary { display: block; width: 100%; margin-top: 14px; padding: 15px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 17px; font-weight: 700; }
+/* microphone: level and sensitivity sit together */
+.mic { padding-top: 10px; padding-bottom: 8px; }
+.mic-head { display: flex; align-items: center; gap: 8px; min-height: 34px; margin-bottom: 4px; }
+.mic-title { font-size: 13px; color: var(--muted); }
+.hit-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); flex: 0 0 auto; }
+.hit-dot.on { background: var(--accent); border-color: var(--accent); }
+.mic-count { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.mic-head .secondary { margin-left: auto; white-space: nowrap; flex: 0 0 auto; }
+.mic-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.meter { position: relative; height: 12px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+.meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--muted); opacity: .6; }
+.meter-mark { position: absolute; top: -1px; bottom: -1px; width: 3px; left: 50%; background: var(--accent); }
+.sens-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 10px 0 0; font-size: 13px; }
+.sens-row label { color: var(--muted); }
+.sens-desc { font-weight: 600; }
+
+.primary { display: block; width: 100%; margin-top: 10px; padding: 15px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 17px; font-weight: 700; }
 .primary.stop { background: var(--bad); color: #fff; }
 .secondary { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-weight: 600; }
-.text-btn { border: 0; background: none; padding: 4px 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: 13.5px; }
+.secondary.inline { width: auto; padding: 8px 14px; font-size: 14px; }
+.secondary.small { width: auto; padding: 6px 12px; font-size: 13.5px; border-radius: 9px; }
+.secondary.on { background: var(--accent); color: var(--on-accent); }
+.text-btn { border: 0; background: none; padding: 6px 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: 13.5px; }
 .note { margin: 10px 2px 0; font-size: 13px; color: var(--muted); }
 .help { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 
-.verdict { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+/* small screens: keep Start/Stop above the tab bar */
+@media (max-height: 700px) {
+  .appbar-in { height: 48px; }
+  .wrap { padding-top: 10px; }
+  .card { padding: 11px 12px; margin-bottom: 10px; }
+  .field + .field { margin-top: 8px; }
+  .field-label { margin-bottom: 4px; }
+  .seg button { padding: 7px 4px; }
+  .seg.small button { padding: 7px 2px; }
+  .round { width: 40px; height: 40px; }
+  .bpm { font-size: 26px; }
+  .runline { display: none; }
+  .beats { margin-bottom: 6px; }
+  .dial { width: 124px; height: 124px; border-width: 6px; }
+  .dial-value { font-size: 24px; }
+  .stats { margin: 6px 0 4px; }
+  .stat-v { font-size: 16px; }
+  canvas#chart { height: 56px; }
+  .mic-head { min-height: 30px; }
+  .sens-row { margin-top: 6px; }
+  .primary { padding: 13px; margin-top: 8px; }
+  #status { margin-top: 8px; }
+}
+
+#liveSlot { margin-top: 14px; }
+
+/* evaluation */
+.empty-state { text-align: center; padding: 26px 18px; }
+.empty-state p { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+.verdict { font-size: 17px; font-weight: 700; line-height: 1.35; margin: 0 0 10px; }
 dl { margin: 0; }
 .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .row dt { color: var(--muted); }
 .row dd { margin: 0; text-align: right; font-weight: 600; }
+.row dd .link { border: 0; background: none; padding: 0 0 0 6px; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font: inherit; font-weight: 600; }
 .sum-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
-
-details.card > summary { list-style: none; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-details.card > summary::-webkit-details-marker { display: none; }
-details.card > summary::after { content: "+"; color: var(--muted); font-size: 20px; line-height: 1; }
-details.card[open] > summary::after { content: "–"; }
-details.card[open] > summary { margin-bottom: 12px; }
-.lat-values { margin: 0 0 10px; font-size: 14px; }
-.lat-values span { display: block; }
-.hist-item { box-sizing: border-box; display: block; width: 100%; padding: 9px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; font-size: 13.5px; text-align: left; }
-.hist-item:first-child { border-top: 0; padding-top: 0; }
-.hist-item > span { display: block; }
-.hist-date { color: var(--muted); font-size: 12.5px; }
-button.hist-item { position: relative; padding-right: 28px; }
-.hist-chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 24px; line-height: 1; }
-.hist-item.active .hist-line { color: var(--accent); font-weight: 600; }
-.hist-tools { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin-top: 12px; }
-.rec-actions { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line); }
-.rec-info { margin: 2px 0 10px; }
-#histHelp { margin: 0 0 12px; }
-#histMsg { margin-top: 10px; }
-.empty { color: var(--muted); font-size: 13.5px; margin: 0; }
-.ver { white-space: nowrap; opacity: .7; }
-.seg.small button { font-size: 13px; padding: 9px 2px; }
+.btn-row { display: flex; gap: 8px; margin-top: 10px; }
+.btn-row .secondary { flex: 1; padding: 9px; font-size: 14px; }
+.rec-info { margin: 0 0 6px; }
 .tl-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
 .tl-head h2 { margin: 0; }
 .tl-head .seg { flex: 0 0 auto; width: 170px; }
 canvas.tl-mini { display: block; width: 100%; height: 34px; border-radius: 8px; background: var(--panel-2); margin-bottom: 6px; touch-action: none; }
-canvas.tl-main { display: block; width: 100%; height: 200px; border-radius: 10px; background: var(--panel-2); touch-action: pan-y; }
+canvas.tl-main { display: block; width: 100%; height: 210px; border-radius: 10px; background: var(--panel-2); touch-action: pan-y; }
 .tl-controls { display: flex; gap: 8px; margin-top: 8px; }
 .tl-controls button { flex: 1; padding: 9px 4px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 600; font-size: 14px; }
 .tl-controls button.on { border-color: var(--accent); color: var(--accent); }
 .tl-stats { margin: 8px 2px 0; font-size: 13.5px; min-height: 19px; }
-.sub-h { font-size: 14px; margin: 16px 0 4px; }
 .heat { display: grid; gap: 3px; margin-top: 6px; }
 #heatMode { margin: 4px 0 2px; }
 .heat .hl { font-size: 11.5px; color: var(--muted); align-self: center; }
@@ -155,131 +208,197 @@ canvas.tl-main { display: block; width: 100%; height: 200px; border-radius: 10px
 .hc.bad { background: rgba(234,122,112,.26); }
 .hc.none .v { color: var(--muted); font-weight: 400; }
 canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; background: var(--panel-2); margin-top: 6px; }
-.row dd .link { border: 0; background: none; padding: 0 0 0 6px; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font: inherit; font-weight: 600; }
-.btn-row { display: flex; gap: 8px; margin-top: 10px; }
-.btn-row .secondary { flex: 1; padding: 9px; font-size: 14px; }
+.rec-actions { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin: 4px 4px 0; }
 
+/* history */
+.hist-item { box-sizing: border-box; display: block; width: 100%; padding: 10px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; font-size: 14px; text-align: left; }
+.hist-item:first-child { border-top: 0; padding-top: 0; }
+.hist-item > span { display: block; }
+.hist-date { color: var(--muted); font-size: 12.5px; }
+button.hist-item { position: relative; padding-right: 28px; }
+.hist-chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 24px; line-height: 1; }
+.hist-item.active .hist-line { color: var(--accent); font-weight: 600; }
+.hist-tools { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin-top: 12px; }
+#histHelp { margin: 0 0 12px; }
+#histMsg { margin-top: 10px; }
+.empty { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+/* settings */
+.lat-values { margin: 0 0 10px; font-size: 14px; }
+.lat-values span { display: block; }
+#latStatus { font-weight: 600; color: var(--text); }
+.about { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* instructions page */
+.page { position: fixed; inset: 0; z-index: 40; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.page .appbar-in { padding-left: 4px; }
+.guide { padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
+.guide .lead { font-size: 15px; margin: 2px 2px 14px; }
+.guide h2 { font-size: 16px; }
+.guide p, .guide li { font-size: 14.5px; line-height: 1.5; }
+.guide p { margin: 0 0 8px; }
+.guide p:last-child, .guide ul:last-child, .guide ol:last-child { margin-bottom: 0; }
+.guide ul, .guide ol { margin: 0 0 8px; padding-left: 20px; }
+.guide li { margin-bottom: 5px; }
+.guide .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.guide .chip { font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+.chip.good { background: var(--band); color: var(--good); }
+.chip.warn { background: rgba(227,168,87,.22); color: var(--warn); }
+.chip.bad { background: rgba(234,122,112,.26); color: var(--bad); }
 </style>
 </head>
 <body>
-<main class="wrap">
-  <header class="top">
+<header class="appbar" id="appbar">
+  <div class="appbar-in">
     <h1>Drum Timing Trainer</h1>
-    <p>Hört über das Mikrofon mit und zeigt, wie genau und gleichmäßig du spielst – am Übungspad oder am Set. <span class="ver">Version 3</span></p>
-  </header>
+    <button type="button" class="icon-btn" id="themeBtn" aria-label="Dunkles Design einschalten">
+      <svg class="ic" id="themeIconMoon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg>
+      <svg class="ic" id="themeIconSun" viewBox="0 0 24 24" aria-hidden="true" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+    </button>
+    <button type="button" class="icon-btn" id="helpBtn" aria-label="Anleitung öffnen">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2.2-2.5 3.9"/><path d="M12 17.2v.1"/></svg>
+    </button>
+  </div>
+  <button type="button" class="recbanner" id="recBanner" hidden><span class="rec-dot" aria-hidden="true"></span><span id="recBannerText">Aufnahme läuft</span><span class="go">zur Aufnahme ›</span></button>
+</header>
 
-  <section class="problem" id="problem" role="alert" hidden>
-    <h2 id="problemTitle"></h2>
-    <p id="problemText"></p>
-    <ol id="problemSteps"></ol>
-    <details><summary>Technische Details</summary><pre id="problemTech"></pre></details>
-  </section>
+<main class="wrap">
+  <!-- ======================= AUFNAHME ======================= -->
+  <section class="tab" id="tab-rec" role="tabpanel" aria-labelledby="tb-rec">
+    <section class="problem" id="problem" role="alert" hidden>
+      <h2 id="problemTitle"></h2>
+      <p id="problemText"></p>
+      <ol id="problemSteps"></ol>
+      <details><summary>Technische Details</summary><pre id="problemTech"></pre></details>
+    </section>
 
-  <section class="card" aria-label="Übung einstellen">
-    <div class="field">
-      <span class="field-label" id="lblMode">Modus</span>
-      <div class="seg" role="group" aria-labelledby="lblMode">
-        <button type="button" data-mode="click">Mit Klick</button>
-        <button type="button" data-mode="free">Frei spielen</button>
+    <section class="card" id="setupCard" aria-label="Übung einstellen">
+      <div class="field">
+        <div class="seg" role="group" aria-label="Modus">
+          <button type="button" data-mode="click">Mit Klick</button>
+          <button type="button" data-mode="free">Frei spielen</button>
+        </div>
       </div>
-    </div>
-    <div class="field" id="freeTempoField">
-      <span class="field-label" id="lblFreeT">Tempo</span>
-      <div class="seg" role="group" aria-labelledby="lblFreeT">
-        <button type="button" data-ftarget="0">Automatisch</button>
-        <button type="button" data-ftarget="1">Zieltempo</button>
+      <div class="field" id="freeTempoField">
+        <span class="field-label" id="lblFreeT">Tempo</span>
+        <div class="seg" role="group" aria-labelledby="lblFreeT">
+          <button type="button" data-ftarget="0">Automatisch</button>
+          <button type="button" data-ftarget="1">Zieltempo</button>
+        </div>
       </div>
-    </div>
-    <div class="field" id="tempoField">
-      <span class="field-label" id="tempoLabel">Tempo</span>
-      <div class="tempo-row">
-        <button type="button" class="round" id="bpmDown" aria-label="Tempo verringern">−</button>
-        <div class="bpm-box"><output class="bpm num" id="bpmOut">100</output><span class="bpm-unit">BPM</span></div>
-        <button type="button" class="round" id="bpmUp" aria-label="Tempo erhöhen">+</button>
+      <div class="field" id="tempoField">
+        <div class="tempo-row">
+          <span class="field-label" id="tempoLabel">Tempo</span>
+          <button type="button" class="round" id="bpmDown" aria-label="Tempo verringern">−</button>
+          <div class="bpm-box"><output class="bpm num" id="bpmOut">100</output><span class="bpm-unit">BPM</span></div>
+          <button type="button" class="round" id="bpmUp" aria-label="Tempo erhöhen">+</button>
+        </div>
+        <input type="range" id="bpmRange" min="30" max="300" step="1" value="100" aria-label="Tempo">
       </div>
-      <input type="range" id="bpmRange" min="30" max="300" step="1" value="100" aria-label="Tempo">
-    </div>
-    <div class="field" id="subField">
-      <span class="field-label" id="lblSub">Du spielst</span>
-      <div class="seg small" role="group" aria-labelledby="lblSub">
-        <button type="button" data-sub="0">Auto</button>
-        <button type="button" data-sub="1">Viertel</button>
-        <button type="button" data-sub="2">Achtel</button>
-        <button type="button" data-sub="3">Triolen</button>
-        <button type="button" data-sub="4">16tel</button>
+      <div class="field" id="subField">
+        <span class="field-label" id="lblSub">Du spielst</span>
+        <div class="seg small" role="group" aria-labelledby="lblSub">
+          <button type="button" data-sub="0">Auto</button>
+          <button type="button" data-sub="1">Viertel</button>
+          <button type="button" data-sub="2">Achtel</button>
+          <button type="button" data-sub="3">Triolen</button>
+          <button type="button" data-sub="4">16tel</button>
+        </div>
       </div>
-    </div>
-    <div class="field" id="outputField">
-      <span class="field-label" id="lblOut">Den Klick hörst du über</span>
-      <div class="seg" role="group" aria-labelledby="lblOut">
-        <button type="button" data-output="headphones">Kopfhörer</button>
-        <button type="button" data-output="speaker">Lautsprecher</button>
+      <div class="field" id="outputField">
+        <span class="field-label" id="lblOut">Klick über</span>
+        <div class="seg small" role="group" aria-labelledby="lblOut">
+          <button type="button" data-output="headphones">Kopfhörer</button>
+          <button type="button" data-output="speaker">Lautsprecher</button>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="card" id="stage" aria-label="Messung">
-    <p class="status" id="status" aria-live="polite">Bereit.</p>
-    <div class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-    <div class="dial" id="dial"><div class="dial-value num" id="dialValue">–</div><div class="dial-label" id="dialLabel">noch keine Schläge</div></div>
-    <div class="stats">
-      <div><span class="stat-v num" id="st1">0</span><span class="stat-l" id="st1l">Schläge</span></div>
-      <div><span class="stat-v num" id="st2">–</span><span class="stat-l" id="st2l">Tendenz</span></div>
-      <div><span class="stat-v num" id="st3">–</span><span class="stat-l" id="st3l">Streuung</span></div>
-    </div>
-    <div class="meter" aria-hidden="true"><div class="meter-fill" id="meterFill"></div><div class="meter-mark" id="meterMark"></div></div>
-    <div class="meter-cap" aria-hidden="true"><span>Mikrofonpegel</span><span>Strich = Schwelle</span></div>
-    <canvas id="chart" role="img" aria-label="Verlauf der letzten Schläge"></canvas>
-    <p class="warn-line" id="leakWarn" hidden></p>
+    <section class="card" id="stage" aria-label="Messung" hidden>
+      <p class="runline" id="runLine"></p>
+      <p class="status" id="stageStatus" aria-live="polite"></p>
+      <div class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div class="dial" id="dial"><div class="dial-value num" id="dialValue">–</div><div class="dial-label" id="dialLabel">noch keine Schläge</div></div>
+      <div class="stats">
+        <div><span class="stat-v num" id="st1">0</span><span class="stat-l" id="st1l">Schläge</span></div>
+        <div><span class="stat-v num" id="st2">–</span><span class="stat-l" id="st2l">Tendenz</span></div>
+        <div><span class="stat-v num" id="st3">–</span><span class="stat-l" id="st3l">Streuung</span></div>
+      </div>
+      <canvas id="chart" role="img" aria-label="Verlauf der letzten Schläge"></canvas>
+    </section>
+
+    <section class="card mic" id="micCard" aria-label="Mikrofon">
+      <div class="mic-head">
+        <span class="mic-title">Mikrofonpegel</span>
+        <span class="hit-dot" id="hitDot" title="Leuchtet bei jedem erkannten Schlag"></span>
+        <span class="mic-count num" id="micCount" aria-live="polite"></span>
+        <button type="button" class="secondary small" id="micTest">Testen</button>
+      </div>
+      <div class="meter" title="Der Strich ist die Schwelle: Nur was darüber kommt, zählt als Schlag." aria-hidden="true"><div class="meter-fill" id="meterFill"></div><div class="meter-mark" id="meterMark" hidden></div></div>
+      <div class="sens-row"><label for="sens">Empfindlichkeit</label><span class="sens-desc" id="sensDesc"></span></div>
+      <input type="range" id="sens" min="0" max="100" step="1" aria-describedby="sensDesc">
+    </section>
+
+    <p class="status" id="status" aria-live="polite"></p>
     <button type="button" class="primary" id="startBtn">Start</button>
+    <p class="warn-line" id="leakWarn" hidden></p>
     <p class="note" id="stageNote"></p>
+    <div id="liveSlot"></div>
   </section>
 
-  <section class="card" id="timeline" hidden aria-label="Zeitleiste">
-    <div class="tl-head">
-      <h2>Zeitleiste</h2>
-      <div class="seg small" role="group" aria-label="Anzeige" id="tlKind" hidden>
-        <button type="button" data-tlkind="tempo">Tempo</button>
-        <button type="button" data-tlkind="dev">Timing</button>
+  <!-- ======================= AUSWERTUNG ======================= -->
+  <section class="tab" id="tab-eval" role="tabpanel" aria-labelledby="tb-eval" hidden>
+    <section class="card empty-state" id="evalEmpty">
+      <h2>Noch keine Auswertung</h2>
+      <p id="evalEmptyText">Nach einer Aufnahme erscheint hier die Auswertung. Frühere Aufnahmen öffnest du im Verlauf.</p>
+      <button type="button" class="secondary inline" id="goHistory">Zum Verlauf</button>
+    </section>
+    <section class="card" id="summary" hidden>
+      <p class="help rec-info" id="recInfo"></p>
+      <p class="verdict" id="verdict"></p>
+      <dl id="summaryList"></dl>
+      <div class="btn-row" id="octaveRow" hidden>
+        <button type="button" class="secondary" id="octHalf">Tempo halbieren</button>
+        <button type="button" class="secondary" id="octDouble">Tempo verdoppeln</button>
       </div>
+      <div id="summaryNotes"></div>
+    </section>
+    <div id="evalSlot">
+      <section class="card" id="timeline" hidden aria-label="Zeitleiste">
+        <div class="tl-head">
+          <h2>Zeitleiste</h2>
+          <div class="seg small" role="group" aria-label="Anzeige" id="tlKind" hidden>
+            <button type="button" data-tlkind="tempo">Tempo</button>
+            <button type="button" data-tlkind="dev">Timing</button>
+          </div>
+        </div>
+        <p class="help rec-info" id="tlSub" hidden></p>
+        <canvas class="tl-mini" id="tlMini" aria-label="Übersicht der ganzen Aufnahme"></canvas>
+        <canvas class="tl-main" id="tlMain" role="img" aria-label="Zeitleiste"></canvas>
+        <div class="tl-controls">
+          <button type="button" id="tlOut" aria-label="Herauszoomen">−</button>
+          <button type="button" id="tlIn" aria-label="Hineinzoomen">+</button>
+          <button type="button" id="tlFit">Alles</button>
+          <button type="button" id="tlLive">Live</button>
+        </div>
+        <p class="tl-stats num" id="tlStats"></p>
+        <p class="help" id="tlHelp"></p>
+      </section>
     </div>
-    <p class="help rec-info" id="tlSub" hidden></p>
-    <canvas class="tl-mini" id="tlMini" aria-label="Übersicht der ganzen Aufnahme"></canvas>
-    <canvas class="tl-main" id="tlMain" role="img" aria-label="Zeitleiste"></canvas>
-    <div class="tl-controls">
-      <button type="button" id="tlOut" aria-label="Herauszoomen">−</button>
-      <button type="button" id="tlIn" aria-label="Hineinzoomen">+</button>
-      <button type="button" id="tlFit">Alles</button>
-      <button type="button" id="tlLive">Live</button>
-    </div>
-    <p class="tl-stats num" id="tlStats"></p>
-    <p class="help" id="tlHelp"></p>
-  </section>
-
-  <section class="card" id="summary" hidden>
-    <h2>Auswertung</h2>
-    <p class="help rec-info" id="recInfo"></p>
-    <p class="verdict" id="verdict"></p>
-    <dl id="summaryList"></dl>
-    <div class="btn-row" id="octaveRow" hidden>
-      <button type="button" class="secondary" id="octHalf">Tempo halbieren</button>
-      <button type="button" class="secondary" id="octDouble">Tempo verdoppeln</button>
-    </div>
-    <div id="summaryNotes"></div>
-    <div id="heatBox" hidden>
-      <h3 class="sub-h">Heatmap: wo du eilst oder schleppst</h3>
+    <section class="card" id="heatBox" hidden>
+      <h2>Heatmap: wo du eilst oder schleppst</h2>
       <div class="seg small" role="group" aria-label="Bezug der Heatmap" id="heatMode" hidden>
         <button type="button" data-heatref="click">zum Klick</button>
         <button type="button" data-heatref="own">zu deinem Schnitt</button>
       </div>
       <p class="help" id="heatHelp"></p>
       <div id="heatGrids"></div>
-    </div>
-    <div id="distBox" hidden>
-      <h3 class="sub-h">Verteilung der Abweichungen</h3>
+    </section>
+    <section class="card" id="distBox" hidden>
+      <h2>Verteilung der Abweichungen</h2>
       <canvas class="dist" id="distCanvas" role="img" aria-label="Verteilung der Abweichungen"></canvas>
       <p class="help" id="distCaption"></p>
-    </div>
+    </section>
     <div class="rec-actions" id="recActions" hidden>
       <button type="button" class="text-btn" id="recExport">Als Datei exportieren</button>
       <button type="button" class="text-btn" id="recDelete">Aufnahme löschen</button>
@@ -287,38 +406,147 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
     <p class="help" id="recMsg" hidden></p>
   </section>
 
-  <details class="card" id="settings">
-    <summary>Mikrofon, Klick und Latenz</summary>
-    <div class="field">
-      <label class="field-label" for="sens">Empfindlichkeit</label>
-      <input type="range" id="sens" min="0" max="100" step="1">
-      <p class="help">Weiter rechts zählen auch leise Schläge (Ghost Notes). Weiter links, wenn Geräusche als Schlag gezählt werden.</p>
-    </div>
-    <div class="field">
-      <label class="field-label" for="clickVol">Klick-Lautstärke</label>
+  <!-- ======================= VERLAUF ======================= -->
+  <section class="tab" id="tab-hist" role="tabpanel" aria-labelledby="tb-hist" hidden>
+    <section class="card" id="history">
+      <h2>Verlauf</h2>
+      <p class="help" id="histHelp" hidden>Tippe auf eine Übung, um ihre ganze Auswertung wieder zu öffnen. Die Aufnahmen sind nur hier in diesem Browser gespeichert.</p>
+      <div id="histList"></div>
+      <div class="hist-tools">
+        <button type="button" class="text-btn" id="histImport">Aufnahme-Datei öffnen</button>
+        <button type="button" class="text-btn" id="histClear" hidden>Verlauf löschen</button>
+      </div>
+      <input type="file" id="importFile" hidden>
+      <p class="help" id="histMsg" role="status" hidden></p>
+    </section>
+  </section>
+
+  <!-- ======================= EINSTELLUNGEN ======================= -->
+  <section class="tab" id="tab-set" role="tabpanel" aria-labelledby="tb-set" hidden>
+    <section class="card">
+      <h2>Darstellung</h2>
+      <div class="seg" role="group" aria-label="Darstellung">
+        <button type="button" data-theme-choice="auto">Automatisch</button>
+        <button type="button" data-theme-choice="light">Hell</button>
+        <button type="button" data-theme-choice="dark">Dunkel</button>
+      </div>
+      <p class="help">„Automatisch“ folgt der Einstellung deines Handys.</p>
+    </section>
+    <section class="card">
+      <h2>Klick</h2>
+      <label class="field-label" for="clickVol">Lautstärke</label>
       <input type="range" id="clickVol" min="5" max="100" step="1">
-    </div>
-    <div class="field">
-      <span class="field-label">Latenz</span>
+      <p class="help">Hörst du den Klick über den Lautsprecher, stell ihn eher leise: Die App filtert ihn heraus, und je lauter er ist, desto kräftiger müssen deine Schläge sein, um mitgezählt zu werden.</p>
+    </section>
+    <section class="card" id="latCard">
+      <h2>Latenz</h2>
       <p class="lat-values" id="latValues"></p>
       <button type="button" class="secondary" id="latBtn">Latenz messen</button>
-      <p class="help">Misst, wie lange der Klick bis zum Mikrofon braucht, damit „früh“ und „spät“ stimmen. Einmal pro Ausgang nötig. Lautsprecher: Handy hinlegen. Kopfhörer: einen Ohrhörer direkt ans Mikrofon des Handys halten (meist unten am Gerät). Es kommen 8 Klicks – dabei nicht spielen.</p>
+      <p class="help" id="latStatus" aria-live="polite" hidden></p>
+      <p class="help">Misst, wie lange der Klick bis zum Mikrofon braucht, damit „früh“ und „spät“ stimmen. Einmal pro Ausgang nötig; gemessen wird der Ausgang, der unter Aufnahme eingestellt ist. Lautsprecher: Handy hinlegen. Kopfhörer: einen Ohrhörer direkt ans Mikrofon des Handys halten (meist unten am Gerät). Es kommen 8 Klicks – dabei nicht spielen.</p>
       <button type="button" class="text-btn" id="latReset" hidden>Messwert für diesen Ausgang löschen</button>
-    </div>
-  </details>
-
-  <details class="card" id="history">
-    <summary>Verlauf</summary>
-    <p class="help" id="histHelp" hidden>Tippe auf eine Übung, um ihre ganze Auswertung wieder zu öffnen. Die Aufnahmen sind nur hier in diesem Browser gespeichert.</p>
-    <div id="histList"></div>
-    <div class="hist-tools">
-      <button type="button" class="text-btn" id="histImport">Aufnahme-Datei öffnen</button>
-      <button type="button" class="text-btn" id="histClear" hidden>Verlauf löschen</button>
-    </div>
-    <input type="file" id="importFile" hidden>
-    <p class="help" id="histMsg" role="status" hidden></p>
-  </details>
+    </section>
+    <section class="card">
+      <h2>Hilfe</h2>
+      <button type="button" class="secondary" id="openHelp2">Anleitung öffnen</button>
+      <p class="about">Drum Timing Trainer · Version 4<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+    </section>
+  </section>
 </main>
+
+<nav class="tabbar" aria-label="Bereiche">
+  <div class="tabbar-in" role="tablist">
+    <button type="button" role="tab" id="tb-rec" data-tab="rec" aria-controls="tab-rec">
+      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3.5"/></svg></span>Aufnahme<span class="tdot" aria-hidden="true"></span>
+    </button>
+    <button type="button" role="tab" id="tb-eval" data-tab="eval" aria-controls="tab-eval">
+      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16.5v-5M12 16.5V5.5M17 16.5v-8"/></svg></span>Auswertung
+    </button>
+    <button type="button" role="tab" id="tb-hist" data-tab="hist" aria-controls="tab-hist">
+      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>Verlauf
+    </button>
+    <button type="button" role="tab" id="tb-set" data-tab="set" aria-controls="tab-set">
+      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span>Einstellungen
+    </button>
+  </div>
+</nav>
+
+<!-- ======================= ANLEITUNG ======================= -->
+<div class="page" id="helpPage" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <header class="appbar">
+    <div class="appbar-in">
+      <button type="button" class="icon-btn" id="helpBack" aria-label="Zurück"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h1 id="helpTitle">Anleitung</h1>
+    </div>
+  </header>
+  <div class="wrap guide">
+    <p class="lead">Die App hört über das Mikrofon deines Handys mit, erkennt jeden Schlag und zeigt dir, wie genau und gleichmäßig du spielst – am Übungspad oder am Set. Alles läuft im Browser auf deinem Handy, es wird nichts hochgeladen.</p>
+
+    <section class="card">
+      <h2>1. Vorbereitung</h2>
+      <ol>
+        <li>Leg das Handy in die Nähe deines Pads oder Sets, aber nicht direkt darauf.</li>
+        <li>Beim ersten Start fragt der Browser nach dem Mikrofon – erlauben.</li>
+        <li>Empfindlichkeit einstellen: Unter <b>Aufnahme</b> neben „Mikrofonpegel“ auf <b>Testen</b> tippen, kurz still sein, dann ein paar Schläge spielen. Jeder erkannte Schlag lässt den Punkt daneben aufleuchten und wird gezählt.</li>
+      </ol>
+      <p>Der Strich im Pegel ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Fehlen leise Schläge (Ghost Notes), schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Mit Klick üben</h2>
+      <ul>
+        <li>Tempo einstellen. Bei <b>Du spielst</b> am besten <b>Auto</b> lassen: Die App erkennt Viertel, Achtel, 16tel und Triolen selbst, auch gemischt und in Fills. Einen festen Notenwert brauchst du nur, wenn du genau diesen üben willst.</li>
+        <li><b>Klick über Kopfhörer</b> ist am genauesten. Über den Lautsprecher hört das Mikrofon den Klick mit; die App filtert ihn heraus, dabei können sehr leise Schläge verloren gehen.</li>
+        <li>Nach dem Start zählt die App 4 Schläge ein, dann spielst du los.</li>
+        <li>Die große Anzeige zeigt jeden Schlag: <b>−</b> heißt zu früh, <b>+</b> heißt zu spät.</li>
+      </ul>
+      <div class="chips"><span class="chip good">bis ±20 ms</span><span class="chip warn">bis ±40 ms</span><span class="chip bad">darüber</span></div>
+      <p>Einmal die <b>Latenz messen</b> (Einstellungen → Latenz), damit „früh“ und „spät“ stimmen. Ohne Messung stimmen Streuung und Verlauf trotzdem.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. Frei spielen – Songs und Band</h2>
+      <ul>
+        <li>Ohne Klick: Die App erkennt das Tempo aus deinem Groove und zeichnet eine Tempokurve.</li>
+        <li>Pausen über 4 Sekunden trennen Songs. Jeder Abschnitt wird einzeln ausgewertet.</li>
+        <li>Kennst du das Tempo des Songs, stell ein <b>Zieltempo</b> ein. Dann zeigt die Kurve die Abweichung davon, und die App verwechselt es kaum noch mit dem halben oder doppelten.</li>
+        <li>Zeigt die Auswertung das halbe oder doppelte Tempo, tippe auf <b>Tempo halbieren</b> bzw. <b>Tempo verdoppeln</b>.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>4. Die Auswertung lesen</h2>
+      <ul>
+        <li><b>Tendenz:</b> ob du im Schnitt vor (−) oder hinter (+) dem Klick liegst.</li>
+        <li><b>Streuung:</b> wie stark deine Schläge schwanken. Bis etwa ±10 ms ist sehr gleichmäßig, über ±20 ms noch unruhig.</li>
+        <li><b>Verlauf:</b> ob du im Lauf der Zeit schneller wirst (eilen) oder langsamer (schleppen).</li>
+        <li><b>Zeitleiste:</b> zeigt die ganze Aufnahme – mit Klick jeden Schlag als Balken, beim freien Spielen die Tempokurve (umschaltbar auf „Timing“). Die dicke Linie ist der gleitende Durchschnitt, die waagrechten Linien helfen beim Ablesen. Wischen verschiebt, zwei Finger oder −/+ zoomen, Tippen auf die Übersicht oben springt, <b>Alles</b> zeigt die ganze Aufnahme.</li>
+        <li><b>zeigen</b> neben einem Wert springt in der Zeitleiste an die Stelle.</li>
+        <li><b>Heatmap:</b> durchschnittliche Abweichung je Position im Takt (1 e + e …). Im Klick-Modus braucht sie die Latenz-Messung. „zu deinem Schnitt“ zeigt, welche Noten aus der Reihe fallen.</li>
+        <li><b>Verteilung:</b> wie viele Schläge wie weit danebenlagen.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>5. Verlauf und Export</h2>
+      <ul>
+        <li>Jede Aufnahme wird im Browser gespeichert, die letzten 60. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
+        <li><b>Als Datei exportieren</b> (unten in der Auswertung) speichert eine Aufnahme als Datei, etwa als Sicherung. <b>Aufnahme-Datei öffnen</b> im Verlauf holt sie zurück – auch auf einem anderen Gerät.</li>
+        <li>Die Aufnahmen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>6. Gut zu wissen</h2>
+      <ul>
+        <li>Die App versucht, den Bildschirm während der Aufnahme anzulassen. Wechselst du die App oder geht der Bildschirm doch aus, stoppt die Aufnahme und wird bis dahin ausgewertet und gespeichert.</li>
+        <li>In der Bandprobe hört das Mikrofon alle Instrumente. Die Tempokurve funktioniert trotzdem; die Werte einzelner Schläge sind beim Üben allein aussagekräftiger.</li>
+        <li>Mit Bluetooth-Kopfhörern ist die Verzögerung größer und kann schwanken; kabelgebundene sind zuverlässiger.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
 <script>
 // Onset detector: detects sharp rises in short-term level (stick/drum attacks).
 // Works on raw sample chunks, returns onset times on the caller's clock.
@@ -897,6 +1125,7 @@ function analyzeFree3(onsets, opts) {
     sens: clampInt(saved.sens, 0, 100, 55),
     clickVol: clampInt(saved.clickVol, 5, 100, 70),
     ftarget: saved.ftarget === true,
+    theme: ['auto', 'light', 'dark'].includes(saved.theme) ? saved.theme : 'auto',
     v: 3
   };
   if (saved.v !== 3) settings.sub = 0;          // new in this version: automatic note value as default
@@ -948,15 +1177,20 @@ function analyzeFree3(onsets, opts) {
   const uiBeats = [];
   let rafId = 0, meterValue = 0, wakeLock = null, statusText = '';
   let chartVals = [], chartMode = settings.mode, pulseTimer = null;
+  let runKind = null, monitoring = false, monitorCount = 0, hitTimer = null, bannerShown = '';
 
   // ---------- formatting ----------
-  function setStatus(t) { statusText = t; $('status').textContent = t; }
+  function setStatus(t) {
+    statusText = t; $('status').textContent = t; $('stageStatus').textContent = t;
+    if (runKind === 'latency') { $('latStatus').textContent = t; $('latStatus').hidden = !t; }
+  }
   const r0 = (v) => Math.round(v);
   const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
   const signed = (v) => { const r = Math.round(v); return r > 0 ? '+' + r : r < 0 ? '−' + Math.abs(r) : '0'; };
   const signed1 = (v) => { const r = Math.round(v * 10) / 10; return (r > 0 ? '+' : r < 0 ? '−' : '') + f1(Math.abs(r)); };
   const mmss = (sec) => { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
   const locked = () => phase !== 'idle' || busy;
+  const setupLocked = () => (phase !== 'idle' && phase !== 'monitor') || (busy && !monitoring);   // the mic test may run while you set up
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   // ---------- setup controls ----------
@@ -974,7 +1208,7 @@ function analyzeFree3(onsets, opts) {
     $('beats').hidden = !click;
     $('bpmOut').textContent = settings.bpm;
     $('bpmRange').value = settings.bpm;
-    $('sens').value = settings.sens;
+    $('sens').value = settings.sens; renderSensDesc();
     $('clickVol').value = settings.clickVol;
     $('st1l').textContent = 'Schläge';
     $('st2l').textContent = click ? 'Tendenz' : 'Tempo';
@@ -982,7 +1216,7 @@ function analyzeFree3(onsets, opts) {
     renderStageNote();
     renderCalInfo();
   }
-  function setBpm(v) { if (locked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; }
+  function setBpm(v) { if (setupLocked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; }
   function holdRepeat(btn, fn) {
     let t1 = null, t2 = null;
     const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
@@ -993,11 +1227,12 @@ function analyzeFree3(onsets, opts) {
   holdRepeat($('bpmDown'), () => setBpm(settings.bpm - 1));
   holdRepeat($('bpmUp'), () => setBpm(settings.bpm + 1));
   $('bpmRange').addEventListener('input', (e) => setBpm(e.target.value));
-  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.mode = b.dataset.mode; saveSettings(); resetLive(); renderSetup(); }));
-  document.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.sub = Number(b.dataset.sub); saveSettings(); renderSetup(); }));
-  document.querySelectorAll('[data-output]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.output = b.dataset.output; saveSettings(); renderSetup(); }));
-  document.querySelectorAll('[data-ftarget]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.ftarget = b.dataset.ftarget === '1'; saveSettings(); renderSetup(); }));
-  $('sens').addEventListener('input', (e) => { settings.sens = clampInt(e.target.value, 0, 100, 55); saveSettings(); applyThreshold(); });
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.mode = b.dataset.mode; saveSettings(); resetLive(); renderSetup(); }));
+  document.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.sub = Number(b.dataset.sub); saveSettings(); renderSetup(); }));
+  document.querySelectorAll('[data-output]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.output = b.dataset.output; saveSettings(); renderSetup(); }));
+  document.querySelectorAll('[data-ftarget]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.ftarget = b.dataset.ftarget === '1'; saveSettings(); renderSetup(); }));
+  function renderSensDesc() { const v = settings.sens; $('sensDesc').textContent = v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel'; }
+  $('sens').addEventListener('input', (e) => { settings.sens = clampInt(e.target.value, 0, 100, 55); saveSettings(); applyThreshold(); renderSensDesc(); });
   $('clickVol').addEventListener('input', (e) => {
     settings.clickVol = clampInt(e.target.value, 5, 100, 70); saveSettings();
     if (clickBus && ctx) clickBus.gain.setTargetAtTime(clickGain(), ctx.currentTime, 0.02);
@@ -1010,6 +1245,31 @@ function analyzeFree3(onsets, opts) {
     btn.classList.toggle('stop', running);
     document.querySelectorAll('[data-mode],[data-sub],[data-output],[data-ftarget],#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport')
       .forEach(el => { el.disabled = running; });
+    renderRunState();
+  }
+
+  // While recording, the setup shrinks to one line and the live display appears; idle, only setup + microphone show.
+  function renderRunState() {
+    const running = !monitoring && (busy || phase === 'noise' || phase === 'latcal' || phase === 'session');
+    $('setupCard').hidden = running;
+    $('runLine').hidden = !running;
+    $('stage').hidden = !running;
+    $('status').hidden = running;
+    $('stageNote').hidden = running;
+    $('micTest').hidden = running;
+    $('micTest').textContent = monitoring ? 'Test beenden' : 'Testen';
+    $('micTest').classList.toggle('on', monitoring);
+    if (running) $('runLine').textContent = runLineText();
+    $('tb-rec').classList.toggle('recording', running && runKind === 'session');
+    updateRecBanner();
+  }
+  function runLineText() {
+    if (runKind === 'latency') return `Latenz-Messung (${OUT_NAMES[settings.output]})`;
+    const s = session;
+    const mode = s ? s.mode : settings.mode, bpm = s ? s.bpm : settings.bpm;
+    if (mode === 'click') return `Mit Klick · ${bpm} BPM · ${SUB_NAMES[s ? s.subMode : settings.sub]} · ${OUT_NAMES[s ? s.output : settings.output]}`;
+    const tg = s ? s.target : (settings.ftarget ? settings.bpm : null);
+    return tg ? `Frei spielen · Zieltempo ${tg} BPM` : 'Frei spielen · Tempo wird erkannt';
   }
 
   function renderStageNote() {
@@ -1032,7 +1292,7 @@ function analyzeFree3(onsets, opts) {
     n.append('Für „früh“ und „spät“ und die Heatmap einmal die Latenz messen – Streuung und Drift stimmen auch ohne. ');
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'text-btn'; b.textContent = 'Latenz jetzt messen';
-    b.addEventListener('click', () => { $('settings').open = true; measureLatencyStandalone(); });
+    b.addEventListener('click', () => measureLatencyStandalone());
     n.append(b);
   }
 
@@ -1116,7 +1376,8 @@ function analyzeFree3(onsets, opts) {
   function reportError(kind, err) {
     const info = kind === 'mic' ? micErrorInfo(err) : INFO.audio;
     showProblem(info, err);
-    setStatus(info.title + ' – Hinweis oben.');
+    setStatus(info.title + ' – Hinweis unter „Aufnahme“.');
+    if (currentTab !== 'rec') showTab('rec');
     try { $('problem').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
   }
   async function precheck() {
@@ -1180,9 +1441,10 @@ function analyzeFree3(onsets, opts) {
     lightBeat(-1);
   }
   function measureNoise(ms) {
+    const d = detector;
     return new Promise(res => {
-      detector.startNoiseMeasure();
-      setTimeout(() => { if (detector) noiseFloor = detector.stopNoiseMeasure(); res(); }, ms);
+      d.startNoiseMeasure();
+      setTimeout(() => { if (d && d === detector) noiseFloor = d.stopNoiseMeasure(); res(); }, ms);
     });
   }
   function baseThreshold() { return Math.max(noiseFloor * sensFactor(settings.sens), 0.0015); }
@@ -1260,12 +1522,12 @@ function analyzeFree3(onsets, opts) {
     return 'Latenz-Messung nicht plausibel. Bitte wiederholen.';
   }
   async function measureLatencyStandalone() {
+    if (monitoring) stopMonitor();
     if (locked()) return;
-    busy = true;
+    busy = true; runKind = 'latency';
     const tok = ++runToken;
     const output = settings.output;
     setLockedUI(true);
-    try { $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
     const ok = await startEngine(tok);
     if (!ok) { if (tok === runToken) finishIdle(); return; }
     const r = await runLatency(output, tok);
@@ -1278,25 +1540,30 @@ function analyzeFree3(onsets, opts) {
     phase = 'idle';
     teardown();
     busy = false;
+    monitoring = false;
     setLockedUI(false);
     renderCalInfo();
     renderStageNote();
   }
 
   // ---------- sessions ----------
-  $('startBtn').addEventListener('click', () => { if (locked()) stopAll('user'); else startSession(); });
+  $('startBtn').addEventListener('click', () => {
+    if (monitoring) { stopMonitor(); startSession(); return; }
+    if (locked()) stopAll('user'); else startSession();
+  });
 
   async function startSession() {
-    busy = true;
+    busy = true; runKind = 'session';
     const tok = ++runToken;
     const mode = settings.mode, output = settings.output;
-    $('summary').hidden = true;
     $('leakWarn').hidden = true;
     $('tlSub').hidden = true;
     if (currentRec) { currentRec = null; renderHistory(); }
+    setEvalState('recording');
     resetLive();
     setLockedUI(true);
-    try { $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    if (currentTab !== 'rec') showTab('rec');
+    window.scrollTo(0, 0);
     const ok = await startEngine(tok);
     if (!ok) { if (tok === runToken) finishIdle(); return; }
     if (mode === 'click' && output === 'speaker' && !cal.speaker) {
@@ -1327,8 +1594,10 @@ function analyzeFree3(onsets, opts) {
       TL.reset('tempo', { ref: target, refLabel: target ? 'Zieltempo' : 'Start' });
     }
     $('tlKind').hidden = true;
+    placeTimeline('live');
     $('timeline').hidden = false;
     busy = false;
+    renderRunState();
     requestWakeLock();
   }
 
@@ -1340,8 +1609,39 @@ function analyzeFree3(onsets, opts) {
     if (wasSession && s) finishSession(s);
   }
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && (phase === 'session' || phase === 'latcal' || phase === 'noise')) stopAll('hidden');
+    if (!document.hidden) return;
+    if (monitoring) stopMonitor();
+    else if (phase === 'session' || phase === 'latcal' || phase === 'noise') stopAll('hidden');
   });
+  window.addEventListener('beforeunload', (e) => { if (phase === 'session') { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- microphone test: level and hit detection without recording ----------
+  async function startMonitor() {
+    if (locked()) return;
+    busy = true; monitoring = true; runKind = 'monitor';
+    const tok = ++runToken;
+    monitorCount = 0; $('micCount').textContent = '';
+    renderRunState();
+    const ok = await startEngine(tok);
+    if (!ok) { if (tok === runToken) finishIdle(); return; }
+    busy = false;
+    phase = 'monitor';
+    applyThreshold();
+    $('micCount').textContent = 'spiel ein paar Schläge';
+    setStatus('');
+    renderRunState();
+  }
+  function stopMonitor() {
+    if (!monitoring) return;
+    finishIdle();
+    $('micCount').textContent = '';
+    setStatus('');
+  }
+  $('micTest').addEventListener('click', () => { if (monitoring) stopMonitor(); else startMonitor(); });
+  function flashHit() {
+    const d = $('hitDot'); d.classList.add('on');
+    clearTimeout(hitTimer); hitTimer = setTimeout(() => d.classList.remove('on'), 90);
+  }
 
   function startMetronome() {
     const s = session;
@@ -1372,7 +1672,9 @@ function analyzeFree3(onsets, opts) {
 
   function onOnset(t, peak, full) {
     if (onsetSink) { onsetSink(t, peak); return; }
+    if (phase === 'monitor') { monitorCount++; $('micCount').textContent = monitorCount === 1 ? '1 Schlag' : `${monitorCount} Schläge`; flashHit(); return; }
     if (phase !== 'session' || !session) return;
+    flashHit();
     if (session.mode === 'click') onClickHit(t); else onFreeHit(t, peak, full);
   }
 
@@ -1455,7 +1757,7 @@ function analyzeFree3(onsets, opts) {
     const r = computeLatency(s.countInClicks, s.countInOnsets, 0.6);
     if (r.ok) {
       const w = $('leakWarn');
-      w.textContent = 'Es sieht so aus, als würde das Mikrofon den Klick mithören – das verfälscht die Messung. Stell „Den Klick hörst du über“ auf „Lautsprecher“ (dann wird er herausgefiltert) oder nutze Kopfhörer.';
+      w.textContent = 'Das Mikrofon hört offenbar den Klick mit – das verfälscht die Messung. Nutze Kopfhörer oder stell „Klick über“ auf „Lautsprecher“, dann wird er herausgefiltert.';
       w.hidden = false;
     }
   }
@@ -1507,6 +1809,11 @@ function analyzeFree3(onsets, opts) {
         TL.setNow(Math.max(0, ctx.currentTime - s.countInEnd));
       } else if (s.mode === 'free') {
         TL.setNow(ctx.currentTime - s.t0);
+      }
+      if (currentTab !== 'rec') {
+        const el = s.mode === 'click' ? Math.max(0, ctx.currentTime - (s.countInEnd || ctx.currentTime)) : ctx.currentTime - s.t0;
+        const txt = `Aufnahme läuft · ${mmss(el)}`;
+        if (txt !== bannerShown) { bannerShown = txt; $('recBannerText').textContent = txt; }
       }
     }
   }
@@ -1983,13 +2290,13 @@ function analyzeFree3(onsets, opts) {
   function finishSession(s) {
     const card = $('summary');
     if (s.mode === 'click' && !s.beat) {
-      clearSummary(); $('recInfo').textContent = ''; $('recActions').hidden = true; $('recMsg').hidden = true;
-      $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; card.hidden = false; return;
+      setEvalState('rec'); clearSummary(); $('recInfo').textContent = ''; $('recActions').hidden = true; $('recMsg').hidden = true;
+      $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; card.hidden = false; showTab('eval', { top: true }); return;
     }
     const rec = recFromSession(s);
     const entry = showRec(rec, 'add');
     if (entry) saveRec(rec);
-    try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    showTab('eval', { top: true });
   }
 
   // ---------- stored recordings ----------
@@ -2016,6 +2323,8 @@ function analyzeFree3(onsets, opts) {
   function showRec(rec, histMode) {
     currentRec = rec;
     const s = sessionFromRec(rec);
+    setEvalState('rec');
+    placeTimeline('eval');
     clearSummary();
     $('tlKind').hidden = true;
     let entry;
@@ -2028,7 +2337,7 @@ function analyzeFree3(onsets, opts) {
       entry = renderFree(s, rec.scale || 1);
     }
     const info = `Aufnahme vom ${fmtDate(rec.started)} · ${rec.mode === 'click' ? 'mit Klick' : 'frei gespielt'}`;
-    $('recInfo').textContent = info; $('tlSub').textContent = info; $('tlSub').hidden = false;
+    $('recInfo').textContent = info; $('tlSub').hidden = true;
     $('recActions').hidden = !entry;
     const del = $('recDelete'); del.dataset.armed = ''; del.textContent = 'Aufnahme löschen';
     recMsg('');
@@ -2049,7 +2358,7 @@ function analyzeFree3(onsets, opts) {
       if (!rec) { setHistFull(d, false); histMsg('Diese Aufnahme ist im Browser nicht mehr gespeichert.'); return; }
       resetLive();
       showRec(rec, 'none');
-      try { $('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+      showTab('eval', { top: true });
     }).catch(() => histMsg('Die Aufnahme konnte nicht geladen werden.'));
   }
 
@@ -2247,8 +2556,8 @@ function analyzeFree3(onsets, opts) {
     const b = $('histClear');
     if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen: Verlauf und alle Aufnahmen löschen'; return; }
     DB.clear().catch(() => {});
+    if (currentRec && phase !== 'session') setEvalState('empty');
     currentRec = null; histMsg('');
-    $('recActions').hidden = true;
     histSet([]);
   });
   $('recDelete').addEventListener('click', () => {
@@ -2258,9 +2567,10 @@ function analyzeFree3(onsets, opts) {
     const d = currentRec.started;
     DB.del(d).catch(() => {});
     currentRec = null; lastResult = null;
-    $('summary').hidden = true; $('timeline').hidden = true;
+    setEvalState('empty');
     histSet(histGet().filter(x => x.d !== d));
     histMsg('Aufnahme gelöscht.');
+    showTab('hist', { top: true });
   });
 
   // ---------- export / open file (optional backup, or to look at a recording on another device) ----------
@@ -2320,18 +2630,130 @@ function analyzeFree3(onsets, opts) {
       const entry = showRec(rec, known ? 'none' : 'add');
       if (entry) { saveRec(rec); histMsg(known ? 'Diese Aufnahme war schon im Verlauf – sie ist jetzt geöffnet.' : 'Aufnahme geöffnet und im Verlauf gespeichert.'); }
       else histMsg('In dieser Aufnahme sind zu wenige Schläge für eine Auswertung.');
-      try { $('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+      if (entry) showTab('eval', { top: true });
     };
     rd.readAsText(f);
   });
 
+  // ---------- evaluation tab states and where the timeline card lives ----------
+  function placeTimeline(where) {
+    const tl = $('timeline'), slot = $(where === 'live' ? 'liveSlot' : 'evalSlot');
+    if (tl.parentNode !== slot) slot.append(tl);
+  }
+  function setEvalState(st) {
+    const has = st === 'rec';
+    $('evalEmpty').hidden = has;
+    $('evalEmptyText').textContent = st === 'recording'
+      ? 'Die Aufnahme läuft noch. Nach dem Stoppen erscheint hier die Auswertung.'
+      : 'Nach einer Aufnahme erscheint hier die Auswertung. Frühere Aufnahmen öffnest du im Verlauf.';
+    $('goHistory').hidden = st === 'recording';
+    if (!has) {
+      ['summary', 'heatBox', 'distBox', 'recActions', 'recMsg'].forEach(id => { $(id).hidden = true; });
+      if ($('timeline').parentNode === $('evalSlot')) $('timeline').hidden = true;
+    }
+  }
+  $('goHistory').addEventListener('click', () => showTab('hist'));
+
+  // ---------- tabs, instructions page, Android back button ----------
+  // The other tabs sit one step "above" Aufnahme in the browser history, so the back button returns there
+  // instead of leaving the app; the instructions page is one more step on top.
+  const TABS = ['rec', 'eval', 'hist', 'set'];
+  let currentTab = 'rec', helpOpen = false;
+  const tabScroll = {};
+  function updateRecBanner() {
+    const show = phase === 'session' && !!session && currentTab !== 'rec';
+    $('recBanner').hidden = !show;
+    if (!show) bannerShown = '';
+  }
+  function showTab(name, o) {
+    o = o || {};
+    if (!TABS.includes(name)) name = 'rec';
+    const changed = name !== currentTab;
+    if (changed) {
+      tabScroll[currentTab] = window.scrollY;
+      if (monitoring) stopMonitor();
+    }
+    currentTab = name;
+    TABS.forEach(t => {
+      $('tab-' + t).hidden = t !== name;
+      const b = $('tb-' + t); b.classList.toggle('on', t === name); b.setAttribute('aria-selected', String(t === name));
+    });
+    if (!o.fromPop) {
+      const st = history.state || {}, onTop = !!(st.tab && st.tab !== 'rec');
+      try {
+        if (name === 'rec') { if (onTop) history.back(); }
+        else if (onTop) history.replaceState({ tab: name }, '');
+        else history.pushState({ tab: name }, '');
+      } catch (e) { /* no history API */ }
+    }
+    updateRecBanner();
+    if (changed || o.top) window.scrollTo(0, o.top ? 0 : (tabScroll[name] || 0));
+    requestAnimationFrame(redrawAll);
+  }
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab, { top: b.dataset.tab === currentTab })));
+  $('recBanner').addEventListener('click', () => showTab('rec'));
+  function openHelp(fromPop) {
+    if (helpOpen) return;
+    helpOpen = true;
+    $('helpPage').hidden = false; $('helpPage').scrollTop = 0;
+    document.body.classList.add('noscroll');
+    if (!fromPop) { try { history.pushState({ tab: currentTab, help: true }, ''); } catch (e) { /* ignore */ } }
+    try { $('helpBack').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  }
+  function closeHelp(fromPop) {
+    if (!helpOpen) return;
+    if (!fromPop && history.state && history.state.help) { history.back(); return; }
+    helpOpen = false;
+    $('helpPage').hidden = true;
+    document.body.classList.remove('noscroll');
+  }
+  $('helpBtn').addEventListener('click', () => openHelp());
+  $('openHelp2').addEventListener('click', () => openHelp());
+  $('helpBack').addEventListener('click', () => closeHelp());
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && helpOpen) closeHelp(); });
+  window.addEventListener('popstate', (e) => {
+    const st = e.state || {};
+    if (st.help) openHelp(true); else closeHelp(true);
+    showTab(st.tab || 'rec', { fromPop: true });
+  });
+
+  // ---------- light / dark ----------
+  const mqDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  const isDark = () => settings.theme === 'dark' || (settings.theme === 'auto' && !!(mqDark && mqDark.matches));
+  function applyTheme() {
+    const root = document.documentElement;
+    if (settings.theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', settings.theme);
+    document.querySelectorAll('[data-theme-choice]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === settings.theme)));
+    const dark = isDark();
+    $('themeIconSun').toggleAttribute('hidden', !dark); $('themeIconMoon').toggleAttribute('hidden', dark);   // SVG elements have no .hidden property
+    $('themeBtn').setAttribute('aria-label', dark ? 'Helles Design einschalten' : 'Dunkles Design einschalten');
+    const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', cssVar('--bg'));
+    requestAnimationFrame(redrawAll);
+  }
+  function setTheme(t) { settings.theme = t; saveSettings(); applyTheme(); }
+  $('themeBtn').addEventListener('click', () => setTheme(isDark() ? 'light' : 'dark'));
+  document.querySelectorAll('[data-theme-choice]').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeChoice)));
+  if (mqDark) {
+    const onMq = () => { if (settings.theme === 'auto') applyTheme(); };
+    if (mqDark.addEventListener) mqDark.addEventListener('change', onMq); else if (mqDark.addListener) mqDark.addListener(onMq);
+  }
+  function redrawAll() { TL.draw(); drawChart(); drawDist(); }
+
   // ---------- init ----------
+  try { history.scrollRestoration = 'manual'; } catch (e) { /* ignore */ }
   saveSettings();
+  applyTheme();
   renderSetup();
   renderHistory();
   resetLive();
   renderMeter(0, null);
   precheck();
+  renderRunState();
+  (function initNav() {
+    const st = history.state || {};
+    showTab(st.tab || 'rec', { fromPop: true });
+    if (st.help) openHelp(true);
+  })();
 })();
 </script>
 </body>
