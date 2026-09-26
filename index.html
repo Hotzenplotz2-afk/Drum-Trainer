@@ -119,9 +119,18 @@ details.card[open] > summary::after { content: "–"; }
 details.card[open] > summary { margin-bottom: 12px; }
 .lat-values { margin: 0 0 10px; font-size: 14px; }
 .lat-values span { display: block; }
-.hist-item { padding: 9px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.hist-item { box-sizing: border-box; display: block; width: 100%; padding: 9px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; font-size: 13.5px; text-align: left; }
 .hist-item:first-child { border-top: 0; padding-top: 0; }
+.hist-item > span { display: block; }
 .hist-date { color: var(--muted); font-size: 12.5px; }
+button.hist-item { position: relative; padding-right: 28px; }
+.hist-chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 24px; line-height: 1; }
+.hist-item.active .hist-line { color: var(--accent); font-weight: 600; }
+.hist-tools { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin-top: 12px; }
+.rec-actions { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line); }
+.rec-info { margin: 2px 0 10px; }
+#histHelp { margin: 0 0 12px; }
+#histMsg { margin-top: 10px; }
 .empty { color: var(--muted); font-size: 13.5px; margin: 0; }
 .ver { white-space: nowrap; opacity: .7; }
 .seg.small button { font-size: 13px; padding: 9px 2px; }
@@ -234,6 +243,7 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
         <button type="button" data-tlkind="dev">Timing</button>
       </div>
     </div>
+    <p class="help rec-info" id="tlSub" hidden></p>
     <canvas class="tl-mini" id="tlMini" aria-label="Übersicht der ganzen Aufnahme"></canvas>
     <canvas class="tl-main" id="tlMain" role="img" aria-label="Zeitleiste"></canvas>
     <div class="tl-controls">
@@ -248,6 +258,7 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
 
   <section class="card" id="summary" hidden>
     <h2>Auswertung</h2>
+    <p class="help rec-info" id="recInfo"></p>
     <p class="verdict" id="verdict"></p>
     <dl id="summaryList"></dl>
     <div class="btn-row" id="octaveRow" hidden>
@@ -269,6 +280,11 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
       <canvas class="dist" id="distCanvas" role="img" aria-label="Verteilung der Abweichungen"></canvas>
       <p class="help" id="distCaption"></p>
     </div>
+    <div class="rec-actions" id="recActions" hidden>
+      <button type="button" class="text-btn" id="recExport">Als Datei exportieren</button>
+      <button type="button" class="text-btn" id="recDelete">Aufnahme löschen</button>
+    </div>
+    <p class="help" id="recMsg" hidden></p>
   </section>
 
   <details class="card" id="settings">
@@ -293,8 +309,14 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
 
   <details class="card" id="history">
     <summary>Verlauf</summary>
+    <p class="help" id="histHelp" hidden>Tippe auf eine Übung, um ihre ganze Auswertung wieder zu öffnen. Die Aufnahmen sind nur hier in diesem Browser gespeichert.</p>
     <div id="histList"></div>
-    <button type="button" class="text-btn" id="histClear" hidden>Verlauf löschen</button>
+    <div class="hist-tools">
+      <button type="button" class="text-btn" id="histImport">Aufnahme-Datei öffnen</button>
+      <button type="button" class="text-btn" id="histClear" hidden>Verlauf löschen</button>
+    </div>
+    <input type="file" id="importFile" hidden>
+    <p class="help" id="histMsg" role="status" hidden></p>
   </details>
 </main>
 <script>
@@ -880,6 +902,42 @@ function analyzeFree3(onsets, opts) {
   if (saved.v !== 3) settings.sub = 0;          // new in this version: automatic note value as default
   let cal = store.get(K_CAL, {}) || {};
   const saveSettings = () => store.set(K_SET, settings);
+
+  // Full recordings (raw hit times) live in IndexedDB – localStorage would be too small and too slow for long songs.
+  const DB = (function () {
+    let opening = null;
+    function open() {
+      if (opening) return opening;
+      opening = new Promise((res, rej) => {
+        let rq;
+        try { rq = window.indexedDB.open('drum-timing-trainer', 1); } catch (e) { rej(e); return; }
+        rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains('rec')) db.createObjectStore('rec', { keyPath: 'started' }); };
+        rq.onsuccess = () => res(rq.result);
+        rq.onerror = () => rej(rq.error);
+        rq.onblocked = () => rej(new Error('blocked'));
+      });
+      opening.catch(() => { opening = null; });
+      return opening;
+    }
+    function run(mode, fn) {
+      return open().then(db => new Promise((res, rej) => {
+        const tx = db.transaction('rec', mode), rq = fn(tx.objectStore('rec'));
+        tx.oncomplete = () => res(rq ? rq.result : undefined);
+        tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('abort'));
+      }));
+    }
+    return {
+      put: (rec) => run('readwrite', st => st.put(rec)),
+      get: (key) => run('readonly', st => st.get(key)),
+      del: (key) => run('readwrite', st => st.delete(key)),
+      clear: () => run('readwrite', st => st.clear())
+    };
+  })();
+  let persistAsked = false;
+  function askPersist() {       // ask the browser not to evict the recordings when space gets low
+    if (persistAsked) return; persistAsked = true;
+    try { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { if (!p) return navigator.storage.persist(); }).catch(() => {}); } catch (e) { /* not supported */ }
+  }
   const clickGain = () => Math.pow(settings.clickVol / 100, 2);
 
   // ---------- state ----------
@@ -950,7 +1008,7 @@ function analyzeFree3(onsets, opts) {
     const btn = $('startBtn');
     btn.textContent = running ? 'Stop' : 'Start';
     btn.classList.toggle('stop', running);
-    document.querySelectorAll('[data-mode],[data-sub],[data-output],[data-ftarget],#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button')
+    document.querySelectorAll('[data-mode],[data-sub],[data-output],[data-ftarget],#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport')
       .forEach(el => { el.disabled = running; });
   }
 
@@ -1234,6 +1292,8 @@ function analyzeFree3(onsets, opts) {
     const mode = settings.mode, output = settings.output;
     $('summary').hidden = true;
     $('leakWarn').hidden = true;
+    $('tlSub').hidden = true;
+    if (currentRec) { currentRec = null; renderHistory(); }
     resetLive();
     setLockedUI(true);
     try { $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
@@ -1921,25 +1981,81 @@ function analyzeFree3(onsets, opts) {
   document.querySelectorAll('[data-heatref]').forEach(b => b.addEventListener('click', () => setHeatRef(b.dataset.heatref)));
 
   function finishSession(s) {
-    clearSummary();
     const card = $('summary');
-    card.hidden = false;
+    if (s.mode === 'click' && !s.beat) {
+      clearSummary(); $('recInfo').textContent = ''; $('recActions').hidden = true; $('recMsg').hidden = true;
+      $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; card.hidden = false; return;
+    }
+    const rec = recFromSession(s);
+    const entry = showRec(rec, 'add');
+    if (entry) saveRec(rec);
+    try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+  }
+
+  // ---------- stored recordings ----------
+  let currentRec = null;
+  function recFromSession(s) {
     if (s.mode === 'click') {
-      if (!s.beat) { $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; card.hidden = false; return; }
-      const a = analyzeClick3(s.xs, s.beat, s.subMode, s.calibrated, 4);
+      return { v: 1, mode: 'click', started: s.started, bpm: s.bpm, subMode: s.subMode, calibrated: s.calibrated, latency: s.latency, output: s.output, ci: 4, xs: Float64Array.from(s.xs) };
+    }
+    const n = s.fOn.length, fT = new Float64Array(n), fP = new Float32Array(n), fS = new Float32Array(n);
+    s.fOn.forEach((o, i) => { fT[i] = o.t; fP[i] = o.peak; fS[i] = o.strength; });
+    return { v: 1, mode: 'free', started: s.started, target: s.target, scale: 1, fT, fP, fS };
+  }
+  function sessionFromRec(rec) {
+    if (rec.mode === 'click') return { mode: 'click', started: rec.started, bpm: rec.bpm, beat: 60 / rec.bpm, subMode: rec.subMode, calibrated: rec.calibrated, xs: Array.from(rec.xs) };
+    const fOn = new Array(rec.fT.length);
+    for (let i = 0; i < fOn.length; i++) fOn[i] = { t: rec.fT[i], peak: rec.fP[i], strength: rec.fS[i] };
+    return { mode: 'free', started: rec.started, target: rec.target, fOn };
+  }
+  const fmtDate = (ms) => { const d = new Date(ms); return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); };
+  function recMsg(t) { $('recMsg').textContent = t; $('recMsg').hidden = !t; }
+  function histMsg(t) { $('histMsg').textContent = t; $('histMsg').hidden = !t; }
+
+  // Analyse a recording and show timeline + summary. histMode: 'add' (new entry), 'replace' (update entry), 'none'.
+  function showRec(rec, histMode) {
+    currentRec = rec;
+    const s = sessionFromRec(rec);
+    clearSummary();
+    $('tlKind').hidden = true;
+    let entry;
+    if (s.mode === 'click') {
+      const a = analyzeClick3(s.xs, s.beat, s.subMode, s.calibrated, rec.ci || 4);
       lastResult = { mode: 'click', a, s };
       TL.setSeries('dev', a.hits.map(h => h.t), a.hits.map(h => h.dev), { showBias: s.calibrated, relative: !s.calibrated });
-      renderClickSummary(s, a);
+      entry = renderClickSummary(s, a);
     } else {
-      renderFree(s, null);
+      entry = renderFree(s, rec.scale || 1);
     }
-    card.hidden = false;
-    try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    const info = `Aufnahme vom ${fmtDate(rec.started)} · ${rec.mode === 'click' ? 'mit Klick' : 'frei gespielt'}`;
+    $('recInfo').textContent = info; $('tlSub').textContent = info; $('tlSub').hidden = false;
+    $('recActions').hidden = !entry;
+    const del = $('recDelete'); del.dataset.armed = ''; del.textContent = 'Aufnahme löschen';
+    recMsg('');
+    $('summary').hidden = false; $('timeline').hidden = false;
+    if (entry && histMode === 'add') addHistory(entry);
+    else if (entry && histMode === 'replace') updateHistory(entry);
+    else renderHistory();
+    return entry || null;
+  }
+  function saveRec(rec) {
+    DB.put(rec).then(() => { setHistFull(rec.started, true); askPersist(); })
+      .catch(() => { if (currentRec === rec) recMsg('Diese Aufnahme konnte im Browser nicht gespeichert werden. Die Übersicht im Verlauf bleibt erhalten.'); });
+  }
+  function openFromHistory(d) {
+    if (locked()) return;
+    histMsg('');
+    DB.get(d).then(rec => {
+      if (!rec) { setHistFull(d, false); histMsg('Diese Aufnahme ist im Browser nicht mehr gespeichert.'); return; }
+      resetLive();
+      showRec(rec, 'none');
+      try { $('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    }).catch(() => histMsg('Die Aufnahme konnte nicht geladen werden.'));
   }
 
   function renderClickSummary(s, a) {
     const dl = $('summaryList');
-    if (a.n < 8) { $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; return; }
+    if (a.n < 8) { $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; return null; }
     const drift = a.driftTotal;
     let verdict;
     if (drift != null && Math.abs(drift) >= 8) verdict = drift < 0 ? 'Du wirst im Verlauf schneller – du eilst.' : 'Du wirst im Verlauf langsamer – du schleppst.';
@@ -1983,7 +2099,7 @@ function analyzeFree3(onsets, opts) {
       $('heatGrids').textContent = '';
     }
     renderDist(a.hist, s.calibrated ? a.bias : null, a.within10, a.within, s.calibrated ? null : 'deinem eigenen Mittel');
-    addHistory({ d: s.started, m: 'c', bpm: s.bpm, sub: s.subMode, n: a.n, cal: s.calibrated, bias: a.bias, sp: a.spread, dr: drift, dur: a.duration });
+    return { d: s.started, m: 'c', bpm: s.bpm, sub: s.subMode, n: a.n, cal: s.calibrated, bias: a.bias, sp: a.spread, dr: drift, dur: a.duration };
   }
 
   function tempoRefs(r, s) {
@@ -1991,7 +2107,7 @@ function analyzeFree3(onsets, opts) {
     return { refs: r.segments.map(g => ({ a: g.a, b: g.b, v: g.start })), label: 'Start' };
   }
   let lastScale = 1;
-  function renderFree(s, scale, keepHistory) {
+  function renderFree(s, scale) {
     clearSummary();
     lastScale = scale || 1;
     const dl = $('summaryList');
@@ -2000,7 +2116,7 @@ function analyzeFree3(onsets, opts) {
     if (!r.tempo.length || r.tempoMedian == null) {
       $('verdict').textContent = 'Zu wenige gleichmäßige Schläge, um ein Tempo zu erkennen.';
       TL.setSeries('tempo', [], [], { now: s.fOn.length ? s.fOn[s.fOn.length - 1].t : 0 });
-      return;
+      return null;
     }
     const tr = tempoRefs(r, s);
     TL.setSeries('tempo', r.tempo.map(p => p.t), r.tempo.map(p => p.bpm), { refs: tr.refs, refLabel: tr.label, now: r.duration });
@@ -2056,7 +2172,7 @@ function analyzeFree3(onsets, opts) {
     }
     const entry = { d: s.started, m: 'f', n: r.micro.length, tp: r.tempoMedian, sd: r.spread, st: segs[0].start, en: segs[segs.length - 1].end, dur: r.duration, tg: s.target, sg: segs.length,
       sgt: segs.slice(0, 6).map(g => Math.round(g.tempo)) };
-    if (keepHistory) replaceLatestHistory(entry); else addHistory(entry);
+    return entry;
   }
   function setTlKind(kind, onlyButtons) {
     document.querySelectorAll('[data-tlkind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tlkind === kind)));
@@ -2069,27 +2185,40 @@ function analyzeFree3(onsets, opts) {
   function octave(f) {
     if (!lastResult || lastResult.mode !== 'free' || !lastResult.r.tempoMedian) return;
     const sc = lastScale * f, t = lastResult.r.tempoMedian * f;
-    if (sc < 0.24 || sc > 4.1 || t < 25 || t > 400) return;
-    renderFree(lastResult.s, sc, true);
+    if (sc < 0.24 || sc > 4.1 || t < 25 || t > 400 || !currentRec) return;
+    currentRec.scale = Math.round(sc * 100) / 100;
+    showRec(currentRec, 'replace');
+    if (histGet().some(x => x.d === currentRec.started && x.full)) DB.put(currentRec).catch(() => {});
   }
   $('octHalf').addEventListener('click', () => octave(0.5));
   $('octDouble').addEventListener('click', () => octave(2));
 
   // ---------- history ----------
-  function addHistory(e) { const h = store.get(K_HIST, []) || []; h.unshift(e); store.set(K_HIST, h.slice(0, 60)); renderHistory(); }
-  function replaceLatestHistory(e) { const h = store.get(K_HIST, []) || []; const i = h.findIndex(x => x.m === 'f' && x.d === e.d); if (i >= 0) h[i] = e; else h.unshift(e); store.set(K_HIST, h.slice(0, 60)); renderHistory(); }
+  const HIST_MAX = 60;
+  function histGet() { const h = store.get(K_HIST, []); return Array.isArray(h) ? h.filter(e => e && typeof e.d === 'number') : []; }
+  function histSet(h) { store.set(K_HIST, h); renderHistory(); }
+  function addHistory(e) {
+    const h = histGet().filter(x => x.d !== e.d);
+    let i = h.findIndex(x => x.d < e.d); if (i < 0) i = h.length;      // newest first, also for opened files
+    h.splice(i, 0, e);
+    h.splice(HIST_MAX).forEach(x => { if (x.full) DB.del(x.d).catch(() => {}); });
+    histSet(h);
+  }
+  function updateHistory(e) { const h = histGet(), i = h.findIndex(x => x.d === e.d); if (i >= 0) { h[i] = Object.assign({}, h[i], e); histSet(h); } else renderHistory(); }
+  function setHistFull(d, full) { const h = histGet(), i = h.findIndex(x => x.d === d); if (i >= 0 && !!h[i].full !== full) { h[i].full = full; histSet(h); } }
   function renderHistory() {
     const list = $('histList'); list.textContent = '';
-    const h = store.get(K_HIST, []) || [];
+    const h = histGet();
     $('histClear').hidden = !h.length;
     $('histClear').textContent = 'Verlauf löschen'; $('histClear').dataset.armed = '';
+    $('histHelp').hidden = !h.some(e => e.full);
     if (!h.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Noch keine Übungen gespeichert.'; list.append(p); return; }
     h.forEach(e => {
-      const item = document.createElement('div'); item.className = 'hist-item';
-      const d = new Date(e.d);
-      const date = document.createElement('div'); date.className = 'hist-date';
-      date.textContent = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + (e.dur ? ', ' + mmss(e.dur) : '');
-      const line = document.createElement('div');
+      const item = document.createElement(e.full ? 'button' : 'div');
+      item.className = 'hist-item' + (currentRec && currentRec.started === e.d ? ' active' : '');
+      const date = document.createElement('span'); date.className = 'hist-date';
+      date.textContent = fmtDate(e.d) + (e.dur ? ', ' + mmss(e.dur) : '');
+      const line = document.createElement('span'); line.className = 'hist-line';
       if (e.m === 'c') {
         let t = `${e.bpm} BPM ${SUB_NAMES[e.sub] || ''}: Streuung ±${r0(e.sp)} ms`;
         if (e.cal && e.bias != null) t += `, Tendenz ${signed(e.bias)} ms`;
@@ -2103,13 +2232,97 @@ function analyzeFree3(onsets, opts) {
         if (e.tg) t += `, Ziel ${e.tg}`;
         line.textContent = t;
       }
-      item.append(date, line); list.append(item);
+      item.append(date, line);
+      if (e.full) {
+        item.type = 'button'; item.disabled = locked();
+        item.setAttribute('aria-label', `Auswertung vom ${fmtDate(e.d)} öffnen: ${line.textContent}`);
+        const c = document.createElement('span'); c.className = 'hist-chev'; c.setAttribute('aria-hidden', 'true'); c.textContent = '›';
+        item.append(c);
+        item.addEventListener('click', () => openFromHistory(e.d));
+      }
+      list.append(item);
     });
   }
   $('histClear').addEventListener('click', () => {
     const b = $('histClear');
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen: Verlauf und alle Aufnahmen löschen'; return; }
+    DB.clear().catch(() => {});
+    currentRec = null; histMsg('');
+    $('recActions').hidden = true;
+    histSet([]);
+  });
+  $('recDelete').addEventListener('click', () => {
+    const b = $('recDelete');
+    if (!currentRec || locked()) return;
     if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen zum Löschen'; return; }
-    store.set(K_HIST, []); renderHistory();
+    const d = currentRec.started;
+    DB.del(d).catch(() => {});
+    currentRec = null; lastResult = null;
+    $('summary').hidden = true; $('timeline').hidden = true;
+    histSet(histGet().filter(x => x.d !== d));
+    histMsg('Aufnahme gelöscht.');
+  });
+
+  // ---------- export / open file (optional backup, or to look at a recording on another device) ----------
+  $('recExport').addEventListener('click', () => {
+    const r = currentRec; if (!r) return;
+    const r5 = (v) => Math.round(v * 1e5) / 1e5, p4 = (v) => Number(v.toPrecision(4));
+    const rec = r.mode === 'click'
+      ? { mode: 'click', started: r.started, bpm: r.bpm, subMode: r.subMode, calibrated: r.calibrated, latency: r.latency, output: r.output, ci: r.ci || 4, xs: Array.from(r.xs, r5) }
+      : { mode: 'free', started: r.started, target: r.target, scale: r.scale || 1, fT: Array.from(r.fT, r5), fP: Array.from(r.fP, p4), fS: Array.from(r.fS, p4) };
+    const json = JSON.stringify({ app: 'drum-timing-trainer', format: 1, exported: new Date().toISOString(), rec });
+    const d = new Date(r.started), two = (n) => String(n).padStart(2, '0');
+    const name = `drum-${r.mode === 'click' ? 'klick' : 'frei'}-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}.json`;
+    try {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const a = document.createElement('a'); a.href = url; a.download = name; a.hidden = true;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      recMsg(`Die Datei „${name}“ wird heruntergeladen. Öffnen kannst du sie später im Verlauf mit „Aufnahme-Datei öffnen“.`);
+    } catch (e) { recMsg('Der Export hat in diesem Browser nicht geklappt.'); }
+  });
+  function recFromExport(o) {
+    const bad = () => { throw new Error('format'); };
+    if (!o || o.app !== 'drum-timing-trainer' || !o.rec || typeof o.rec !== 'object') bad();
+    const r = o.rec;
+    const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+    const arr = (a, lo, hi) => { if (!Array.isArray(a) || a.length > 400000) bad(); for (let i = 0; i < a.length; i++) if (!num(a[i], lo, hi)) bad(); return a; };
+    if (!num(r.started, 0, 1e14)) bad();
+    if (r.mode === 'click') {
+      if (!num(r.bpm, 30, 300) || ![0, 1, 2, 3, 4].includes(r.subMode)) bad();
+      const xs = arr(r.xs, -60, 86400).slice().sort((a, b) => a - b);
+      return { v: 1, mode: 'click', started: r.started, bpm: Math.round(r.bpm), subMode: r.subMode, calibrated: r.calibrated === true,
+        latency: num(r.latency, 0, 2) ? r.latency : 0, output: r.output === 'speaker' ? 'speaker' : 'headphones', ci: 4, xs: Float64Array.from(xs) };
+    }
+    if (r.mode === 'free') {
+      const fT = arr(r.fT, -1, 86400), fP = arr(r.fP, 0, 1000), fS = arr(r.fS, 0, 1000);
+      if (fP.length !== fT.length || fS.length !== fT.length) bad();
+      const idx = fT.map((t, i) => i).sort((a, b) => fT[a] - fT[b]);
+      return { v: 1, mode: 'free', started: r.started, target: num(r.target, 30, 300) ? Math.round(r.target) : null,
+        scale: [0.25, 0.5, 1, 2, 4].includes(r.scale) ? r.scale : 1,
+        fT: Float64Array.from(idx, i => fT[i]), fP: Float32Array.from(idx, i => fP[i]), fS: Float32Array.from(idx, i => fS[i]) };
+    }
+    return bad();
+  }
+  $('histImport').addEventListener('click', () => { if (!locked()) { histMsg(''); $('importFile').click(); } });
+  $('importFile').addEventListener('change', (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if (!f || locked()) return;
+    if (f.size > 40e6) { histMsg('Die Datei ist zu groß für eine Aufnahme.'); return; }
+    const rd = new FileReader();
+    rd.onerror = () => histMsg('Die Datei konnte nicht gelesen werden.');
+    rd.onload = () => {
+      let rec;
+      try { rec = recFromExport(JSON.parse(String(rd.result))); } catch (e) { histMsg('Diese Datei ist keine Aufnahme vom Drum Timing Trainer.'); return; }
+      const known = histGet().some(x => x.d === rec.started);
+      resetLive();
+      const entry = showRec(rec, known ? 'none' : 'add');
+      if (entry) { saveRec(rec); histMsg(known ? 'Diese Aufnahme war schon im Verlauf – sie ist jetzt geöffnet.' : 'Aufnahme geöffnet und im Verlauf gespeichert.'); }
+      else histMsg('In dieser Aufnahme sind zu wenige Schläge für eine Auswertung.');
+      try { $('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    };
+    rd.readAsText(f);
   });
 
   // ---------- init ----------
