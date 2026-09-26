@@ -1,0 +1,2125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Drum Timing Trainer</title>
+<style>
+:root {
+  --bg: #f3efe7; --panel: #fffcf6; --panel-2: #ece5d8; --line: #ddd2bf;
+  --text: #211a12; --muted: #6f624f; --accent: #9c5f14; --on-accent: #fff7ec;
+  --good: #2f7d3b; --warn: #a86a0c; --bad: #b53c32; --band: rgba(47,125,59,.12);
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16110c; --panel: #211911; --panel-2: #2a2017; --line: #3a2d20;
+    --text: #f2eadf; --muted: #a8998a; --accent: #e0a24f; --on-accent: #1b1208;
+    --good: #6cc07a; --warn: #e3a857; --bad: #ea7a70; --band: rgba(108,192,122,.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16110c; --panel: #211911; --panel-2: #2a2017; --line: #3a2d20;
+  --text: #f2eadf; --muted: #a8998a; --accent: #e0a24f; --on-accent: #1b1208;
+  --good: #6cc07a; --warn: #e3a857; --bad: #ea7a70; --band: rgba(108,192,122,.14);
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; opacity: .45; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 480px; margin: 0 auto; padding: 18px 16px 36px; }
+.top h1 { font-size: 22px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -.01em; }
+.top p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 16px; margin: 0 0 8px; }
+
+.problem { background: var(--panel); border: 2px solid var(--bad); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.problem h2 { color: var(--bad); }
+.problem p { margin: 0 0 8px; }
+.problem ol { margin: 0 0 8px; padding-left: 20px; }
+.problem li { margin-bottom: 4px; }
+.problem details { font-size: 13px; color: var(--muted); }
+.problem pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 6px 0 0; font-family: inherit; }
+
+.field + .field { margin-top: 14px; }
+.field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.seg { display: flex; gap: 3px; padding: 3px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; }
+.seg button { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--muted); padding: 9px 4px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+.tempo-row { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 8px; }
+.round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 22px; line-height: 1; }
+.bpm-box { text-align: center; min-width: 88px; }
+.bpm { display: block; font-size: 30px; font-weight: 700; line-height: 1.1; }
+.bpm-unit { display: block; font-size: 12px; color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+
+.status { text-align: center; color: var(--muted); font-size: 14px; min-height: 20px; margin: 0 0 10px; }
+.beats { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.beats span { width: 11px; height: 11px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); }
+.beats span:first-child { width: 13px; height: 13px; margin-top: -1px; }
+.beats span.on { background: var(--accent); border-color: var(--accent); }
+
+.dial { width: 172px; height: 172px; margin: 0 auto; border-radius: 50%; border: 7px solid var(--line); background: var(--panel-2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; transition: border-color .12s ease, transform .09s ease; }
+.dial-value { font-size: 32px; font-weight: 700; line-height: 1.1; }
+.dial-label { font-size: 12.5px; color: var(--muted); margin-top: 2px; text-align: center; padding: 0 10px; }
+.dial.good { border-color: var(--good); } .dial.good .dial-value { color: var(--good); }
+.dial.warn { border-color: var(--warn); } .dial.warn .dial-value { color: var(--warn); }
+.dial.bad { border-color: var(--bad); } .dial.bad .dial-value { color: var(--bad); }
+.dial.pulse { transform: scale(1.035); }
+@media (prefers-reduced-motion: reduce) { .dial { transition: none; } .dial.pulse { transform: none; } }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin: 14px 0 12px; }
+.stat-v { display: block; font-size: 18px; font-weight: 700; }
+.stat-l { display: block; font-size: 11.5px; color: var(--muted); }
+
+.meter { position: relative; height: 8px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; margin-bottom: 4px; }
+.meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--muted); opacity: .55; }
+.meter-mark { position: absolute; top: -1px; bottom: -1px; width: 2px; left: 50%; background: var(--accent); }
+.meter-cap { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+
+canvas#chart { display: block; width: 100%; height: 96px; border-radius: 10px; background: var(--panel-2); }
+.warn-line { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--warn); font-size: 13.5px; }
+
+.primary { display: block; width: 100%; margin-top: 14px; padding: 15px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 17px; font-weight: 700; }
+.primary.stop { background: var(--bad); color: #fff; }
+.secondary { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-weight: 600; }
+.text-btn { border: 0; background: none; padding: 4px 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: 13.5px; }
+.note { margin: 10px 2px 0; font-size: 13px; color: var(--muted); }
+.help { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+
+.verdict { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+dl { margin: 0; }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.row dt { color: var(--muted); }
+.row dd { margin: 0; text-align: right; font-weight: 600; }
+.sum-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+
+details.card > summary { list-style: none; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::after { content: "+"; color: var(--muted); font-size: 20px; line-height: 1; }
+details.card[open] > summary::after { content: "–"; }
+details.card[open] > summary { margin-bottom: 12px; }
+.lat-values { margin: 0 0 10px; font-size: 14px; }
+.lat-values span { display: block; }
+.hist-item { padding: 9px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.hist-item:first-child { border-top: 0; padding-top: 0; }
+.hist-date { color: var(--muted); font-size: 12.5px; }
+.empty { color: var(--muted); font-size: 13.5px; margin: 0; }
+.ver { white-space: nowrap; opacity: .7; }
+.seg.small button { font-size: 13px; padding: 9px 2px; }
+.tl-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.tl-head h2 { margin: 0; }
+.tl-head .seg { flex: 0 0 auto; width: 170px; }
+canvas.tl-mini { display: block; width: 100%; height: 34px; border-radius: 8px; background: var(--panel-2); margin-bottom: 6px; touch-action: none; }
+canvas.tl-main { display: block; width: 100%; height: 200px; border-radius: 10px; background: var(--panel-2); touch-action: pan-y; }
+.tl-controls { display: flex; gap: 8px; margin-top: 8px; }
+.tl-controls button { flex: 1; padding: 9px 4px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 600; font-size: 14px; }
+.tl-controls button.on { border-color: var(--accent); color: var(--accent); }
+.tl-stats { margin: 8px 2px 0; font-size: 13.5px; min-height: 19px; }
+.sub-h { font-size: 14px; margin: 16px 0 4px; }
+.heat { display: grid; gap: 3px; margin-top: 6px; }
+#heatMode { margin: 4px 0 2px; }
+.heat .hl { font-size: 11.5px; color: var(--muted); align-self: center; }
+.hc { border-radius: 6px; background: var(--panel-2); text-align: center; padding: 4px 0 5px; min-width: 0; }
+.hc .sy { display: block; font-size: 10.5px; color: var(--muted); line-height: 1.2; }
+.hc .v { display: block; font-size: 13px; font-weight: 700; line-height: 1.25; }
+.hc.good { background: var(--band); }
+.hc.warn { background: rgba(227,168,87,.22); }
+.hc.bad { background: rgba(234,122,112,.26); }
+.hc.none .v { color: var(--muted); font-weight: 400; }
+canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; background: var(--panel-2); margin-top: 6px; }
+.row dd .link { border: 0; background: none; padding: 0 0 0 6px; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font: inherit; font-weight: 600; }
+.btn-row { display: flex; gap: 8px; margin-top: 10px; }
+.btn-row .secondary { flex: 1; padding: 9px; font-size: 14px; }
+
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1>Drum Timing Trainer</h1>
+    <p>Hört über das Mikrofon mit und zeigt, wie genau und gleichmäßig du spielst – am Übungspad oder am Set. <span class="ver">Version 3</span></p>
+  </header>
+
+  <section class="problem" id="problem" role="alert" hidden>
+    <h2 id="problemTitle"></h2>
+    <p id="problemText"></p>
+    <ol id="problemSteps"></ol>
+    <details><summary>Technische Details</summary><pre id="problemTech"></pre></details>
+  </section>
+
+  <section class="card" aria-label="Übung einstellen">
+    <div class="field">
+      <span class="field-label" id="lblMode">Modus</span>
+      <div class="seg" role="group" aria-labelledby="lblMode">
+        <button type="button" data-mode="click">Mit Klick</button>
+        <button type="button" data-mode="free">Frei spielen</button>
+      </div>
+    </div>
+    <div class="field" id="freeTempoField">
+      <span class="field-label" id="lblFreeT">Tempo</span>
+      <div class="seg" role="group" aria-labelledby="lblFreeT">
+        <button type="button" data-ftarget="0">Automatisch</button>
+        <button type="button" data-ftarget="1">Zieltempo</button>
+      </div>
+    </div>
+    <div class="field" id="tempoField">
+      <span class="field-label" id="tempoLabel">Tempo</span>
+      <div class="tempo-row">
+        <button type="button" class="round" id="bpmDown" aria-label="Tempo verringern">−</button>
+        <div class="bpm-box"><output class="bpm num" id="bpmOut">100</output><span class="bpm-unit">BPM</span></div>
+        <button type="button" class="round" id="bpmUp" aria-label="Tempo erhöhen">+</button>
+      </div>
+      <input type="range" id="bpmRange" min="30" max="300" step="1" value="100" aria-label="Tempo">
+    </div>
+    <div class="field" id="subField">
+      <span class="field-label" id="lblSub">Du spielst</span>
+      <div class="seg small" role="group" aria-labelledby="lblSub">
+        <button type="button" data-sub="0">Auto</button>
+        <button type="button" data-sub="1">Viertel</button>
+        <button type="button" data-sub="2">Achtel</button>
+        <button type="button" data-sub="3">Triolen</button>
+        <button type="button" data-sub="4">16tel</button>
+      </div>
+    </div>
+    <div class="field" id="outputField">
+      <span class="field-label" id="lblOut">Den Klick hörst du über</span>
+      <div class="seg" role="group" aria-labelledby="lblOut">
+        <button type="button" data-output="headphones">Kopfhörer</button>
+        <button type="button" data-output="speaker">Lautsprecher</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="stage" aria-label="Messung">
+    <p class="status" id="status" aria-live="polite">Bereit.</p>
+    <div class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <div class="dial" id="dial"><div class="dial-value num" id="dialValue">–</div><div class="dial-label" id="dialLabel">noch keine Schläge</div></div>
+    <div class="stats">
+      <div><span class="stat-v num" id="st1">0</span><span class="stat-l" id="st1l">Schläge</span></div>
+      <div><span class="stat-v num" id="st2">–</span><span class="stat-l" id="st2l">Tendenz</span></div>
+      <div><span class="stat-v num" id="st3">–</span><span class="stat-l" id="st3l">Streuung</span></div>
+    </div>
+    <div class="meter" aria-hidden="true"><div class="meter-fill" id="meterFill"></div><div class="meter-mark" id="meterMark"></div></div>
+    <div class="meter-cap" aria-hidden="true"><span>Mikrofonpegel</span><span>Strich = Schwelle</span></div>
+    <canvas id="chart" role="img" aria-label="Verlauf der letzten Schläge"></canvas>
+    <p class="warn-line" id="leakWarn" hidden></p>
+    <button type="button" class="primary" id="startBtn">Start</button>
+    <p class="note" id="stageNote"></p>
+  </section>
+
+  <section class="card" id="timeline" hidden aria-label="Zeitleiste">
+    <div class="tl-head">
+      <h2>Zeitleiste</h2>
+      <div class="seg small" role="group" aria-label="Anzeige" id="tlKind" hidden>
+        <button type="button" data-tlkind="tempo">Tempo</button>
+        <button type="button" data-tlkind="dev">Timing</button>
+      </div>
+    </div>
+    <canvas class="tl-mini" id="tlMini" aria-label="Übersicht der ganzen Aufnahme"></canvas>
+    <canvas class="tl-main" id="tlMain" role="img" aria-label="Zeitleiste"></canvas>
+    <div class="tl-controls">
+      <button type="button" id="tlOut" aria-label="Herauszoomen">−</button>
+      <button type="button" id="tlIn" aria-label="Hineinzoomen">+</button>
+      <button type="button" id="tlFit">Alles</button>
+      <button type="button" id="tlLive">Live</button>
+    </div>
+    <p class="tl-stats num" id="tlStats"></p>
+    <p class="help" id="tlHelp"></p>
+  </section>
+
+  <section class="card" id="summary" hidden>
+    <h2>Auswertung</h2>
+    <p class="verdict" id="verdict"></p>
+    <dl id="summaryList"></dl>
+    <div class="btn-row" id="octaveRow" hidden>
+      <button type="button" class="secondary" id="octHalf">Tempo halbieren</button>
+      <button type="button" class="secondary" id="octDouble">Tempo verdoppeln</button>
+    </div>
+    <div id="summaryNotes"></div>
+    <div id="heatBox" hidden>
+      <h3 class="sub-h">Heatmap: wo du eilst oder schleppst</h3>
+      <div class="seg small" role="group" aria-label="Bezug der Heatmap" id="heatMode" hidden>
+        <button type="button" data-heatref="click">zum Klick</button>
+        <button type="button" data-heatref="own">zu deinem Schnitt</button>
+      </div>
+      <p class="help" id="heatHelp"></p>
+      <div id="heatGrids"></div>
+    </div>
+    <div id="distBox" hidden>
+      <h3 class="sub-h">Verteilung der Abweichungen</h3>
+      <canvas class="dist" id="distCanvas" role="img" aria-label="Verteilung der Abweichungen"></canvas>
+      <p class="help" id="distCaption"></p>
+    </div>
+  </section>
+
+  <details class="card" id="settings">
+    <summary>Mikrofon, Klick und Latenz</summary>
+    <div class="field">
+      <label class="field-label" for="sens">Empfindlichkeit</label>
+      <input type="range" id="sens" min="0" max="100" step="1">
+      <p class="help">Weiter rechts zählen auch leise Schläge (Ghost Notes). Weiter links, wenn Geräusche als Schlag gezählt werden.</p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="clickVol">Klick-Lautstärke</label>
+      <input type="range" id="clickVol" min="5" max="100" step="1">
+    </div>
+    <div class="field">
+      <span class="field-label">Latenz</span>
+      <p class="lat-values" id="latValues"></p>
+      <button type="button" class="secondary" id="latBtn">Latenz messen</button>
+      <p class="help">Misst, wie lange der Klick bis zum Mikrofon braucht, damit „früh“ und „spät“ stimmen. Einmal pro Ausgang nötig. Lautsprecher: Handy hinlegen. Kopfhörer: einen Ohrhörer direkt ans Mikrofon des Handys halten (meist unten am Gerät). Es kommen 8 Klicks – dabei nicht spielen.</p>
+      <button type="button" class="text-btn" id="latReset" hidden>Messwert für diesen Ausgang löschen</button>
+    </div>
+  </details>
+
+  <details class="card" id="history">
+    <summary>Verlauf</summary>
+    <div id="histList"></div>
+    <button type="button" class="text-btn" id="histClear" hidden>Verlauf löschen</button>
+  </details>
+</main>
+<script>
+// Onset detector: detects sharp rises in short-term level (stick/drum attacks).
+// Works on raw sample chunks, returns onset times on the caller's clock.
+class OnsetDetector {
+  constructor(sampleRate, opts) {
+    opts = opts || {};
+    this.sr = sampleRate;
+    this.block = 64;                                   // ~1.3 ms at 48 kHz
+    this.blockDur = this.block / sampleRate;
+    this.release = Math.exp(-this.blockDur / 0.015);   // envelope release ~15 ms
+    this.lookback = Math.max(3, Math.round(0.008 / this.blockDur)); // compare with level ~8 ms ago
+    this.hist = new Float32Array(this.lookback);
+    this.histIdx = 0;
+    this.env = 0;
+    this.rise = opts.rise || 1.7;                      // required jump vs. recent level
+    this.minGap = opts.minGap || 0.03;                 // s, one attack = one hit
+    this.threshold = opts.threshold || 0.01;           // absolute block RMS
+    this.lastOnset = -Infinity;
+    this.onOnset = opts.onOnset || function () {};
+    this.peakSinceRead = 0;
+    this.measuring = false;
+    this.measureVals = [];
+    this.pending = null;                               // onset waiting for its peak level
+    // 2nd-order high-pass (~1 kHz): keeps stick attacks, removes drum body, hum and room rumble
+    const f0 = 1000, Q = 0.7071, w0 = 2 * Math.PI * f0 / sampleRate;
+    const cw = Math.cos(w0), alpha = Math.sin(w0) / (2 * Q), a0 = 1 + alpha;
+    this.b0 = (1 + cw) / 2 / a0; this.b1 = -(1 + cw) / a0; this.b2 = (1 + cw) / 2 / a0;
+    this.a1 = -2 * cw / a0; this.a2 = (1 - alpha) / a0;
+    this.x1 = 0; this.x2 = 0; this.y1 = 0; this.y2 = 0;
+  }
+  startNoiseMeasure() { this.measuring = true; this.measureVals = []; }
+  stopNoiseMeasure() {
+    this.measuring = false;
+    const v = this.measureVals.slice().sort((a, b) => a - b);
+    this.measureVals = [];
+    if (!v.length) return 0.001;
+    return Math.max(v[Math.floor(v.length / 2)], 0.0003);   // median, robust to single noises
+  }
+  readPeak() { const p = this.peakSinceRead; this.peakSinceRead = 0; return p; }
+  process(samples, t0) {
+    const n = samples.length, B = this.block;
+    for (let off = 0; off + B <= n; off += B) {
+      let sum = 0, sumF = 0;
+      for (let i = off; i < off + B; i++) {
+        const x = samples[i];
+        const y = this.b0 * x + this.b1 * this.x1 + this.b2 * this.x2 - this.a1 * this.y1 - this.a2 * this.y2;
+        this.x2 = this.x1; this.x1 = x; this.y2 = this.y1; this.y1 = y;
+        sum += y * y; sumF += x * x;
+      }
+      const rms = Math.sqrt(sum / B), rmsF = Math.sqrt(sumF / B);
+      const t = t0 + off / this.sr;
+      if (rms > this.peakSinceRead) this.peakSinceRead = rms;
+      if (this.measuring) this.measureVals.push(rms);
+
+      if (this.pending) {
+        if (rms > this.pending.peak) this.pending.peak = rms;
+        if (rmsF > this.pending.full) this.pending.full = rmsF;
+        if (t >= this.pending.time + 0.02) {
+          const p = this.pending; this.pending = null;
+          this.onOnset(p.time, p.peak, p.full);
+        }
+      }
+      const envOld = this.hist[this.histIdx];
+      if (!this.measuring && rms > this.threshold && rms > this.rise * envOld &&
+          (t - this.lastOnset) >= this.minGap) {
+        this.lastOnset = t;
+        if (this.pending) { const p = this.pending; this.pending = null; this.onOnset(p.time, p.peak, p.full); }
+        this.pending = { time: t, peak: rms, full: rmsF };
+      }
+      this.env = rms > this.env ? rms : this.env * this.release;
+      this.hist[this.histIdx] = this.env;
+      this.histIdx = (this.histIdx + 1) % this.lookback;
+    }
+  }
+}
+
+// ---------- small math helpers ----------
+function mean(a) { if (!a.length) return 0; let s = 0; for (const v of a) s += v; return s / a.length; }
+function sdev(a) { if (a.length < 2) return 0; const m = mean(a); let s = 0; for (const v of a) s += (v - m) * (v - m); return Math.sqrt(s / (a.length - 1)); }
+function median(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); const h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; }
+function linreg(xs, ys) {
+  const n = xs.length; if (n < 2) return { slope: 0 };
+  const mx = mean(xs), my = mean(ys); let sxy = 0, sxx = 0;
+  for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) * (xs[i] - mx); }
+  return { slope: sxx > 0 ? sxy / sxx : 0 };
+}
+// circular mean of values on a repeating grid of length g (result in (-g/2, g/2])
+function circMean(vals, g) {
+  let s = 0, c = 0;
+  for (const v of vals) { const a = 2 * Math.PI * v / g; s += Math.sin(a); c += Math.cos(a); }
+  if (!vals.length || (Math.abs(s) < 1e-12 && Math.abs(c) < 1e-12)) return 0;
+  return Math.atan2(s, c) / (2 * Math.PI) * g;
+}
+// sensitivity slider (0..100) -> threshold multiple of the noise floor (40 .. 3)
+function sensFactor(s) { return 40 * Math.pow(3 / 40, s / 100); }
+
+// ---------- click mode analysis ----------
+// raws: hit times in s relative to the first click (latency already removed when calibrated)
+// g: grid spacing in s. Hits are matched to the grid around the player's own centre,
+// so a missing/wrong latency value never breaks the matching.
+function analyzeClick(raws, g, calibrated) {
+  const offset = raws.length ? circMean(raws, g) : 0;
+  const seen = new Set(); const hits = []; let unmatched = 0, extra = 0;
+  for (const r of raws) {
+    const x = r - offset;
+    const k = Math.round(x / g);
+    const rel = (x - k * g) * 1000;
+    if (Math.abs(rel) > 0.4 * g * 1000) { unmatched++; continue; }
+    if (seen.has(k)) { extra++; continue; }
+    seen.add(k);
+    hits.push({ k, rel, abs: rel + offset * 1000, time: r });
+  }
+  const n = hits.length;
+  const res = { n, hits, offsetMs: offset * 1000, unmatched, extra, calibrated };
+  if (!n) return res;
+  const rel = hits.map(h => h.rel);
+  const dev = calibrated ? hits.map(h => h.abs) : rel;
+  res.bias = calibrated ? mean(dev) : null;
+  res.spread = sdev(rel);
+  res.within = dev.filter(d => Math.abs(d) <= 20).length / n;
+  const duration = hits[n - 1].time - hits[0].time;
+  res.duration = duration;
+  if (n >= 12 && duration >= 8) {
+    const reg = linreg(hits.map(h => h.time), rel);
+    res.driftTotal = reg.slope * duration;          // ms over the whole session
+  } else res.driftTotal = null;
+  if (n >= 16) {
+    const h1 = rel.slice(0, n >> 1), h2 = rel.slice(n >> 1);
+    res.spread1 = sdev(h1); res.spread2 = sdev(h2);
+    const even = hits.filter(h => h.k % 2 === 0), odd = hits.filter(h => h.k % 2 !== 0);
+    if (even.length >= 8 && odd.length >= 8) {
+      res.handA = mean(even.map(h => calibrated ? h.abs : h.rel));
+      res.handB = mean(odd.map(h => calibrated ? h.abs : h.rel));
+    }
+  }
+  return res;
+}
+
+// ---------- free mode ----------
+function freeState() { return { last: null, recent: [], intervals: [], pauses: 0 }; }
+// adds one onset; returns the new interval item or null
+function freeAddOnset(st, t, sub) {
+  if (st.last === null) { st.last = t; return null; }
+  const dt = t - st.last; st.last = t;
+  if (dt > 2.5) { st.pauses++; st.recent = []; return null; }
+  const med = st.recent.length >= 4 ? median(st.recent) : null;
+  st.recent.push(dt); if (st.recent.length > 9) st.recent.shift();
+  const outlier = med !== null && (dt < 0.6 * med || dt > 1.6 * med);
+  const item = { t, dt, outlier, bpm: 60 / (dt * sub) };
+  st.intervals.push(item);
+  return item;
+}
+function analyzeFree(st, sub) {
+  const ok = st.intervals.filter(i => !i.outlier);
+  if (ok.length < 8) return null;
+  const dts = ok.map(i => i.dt);
+  const res = {
+    n: ok.length,
+    tempo: 60 / (median(dts) * sub),
+    sdMs: sdev(dts) * 1000,                        // replaced below by the detrended value when possible
+    outliers: st.intervals.length - ok.length,
+    pauses: st.pauses,
+    duration: ok[ok.length - 1].t - ok[0].t
+  };
+  if (ok.length >= 12) {
+    // unevenness without the overall tempo trend (the trend is reported separately)
+    const ts = ok.map(i => i.t), reg = linreg(ts, dts), mt = mean(ts), md = mean(dts);
+    const resid = ok.map(i => i.dt - (md + reg.slope * (i.t - mt)));
+    res.sdMs = sdev(resid) * 1000;
+  }
+  res.cv = res.sdMs / (mean(dts) * 1000) * 100;
+  if (ok.length >= 12) {
+    const m = Math.max(5, Math.floor(ok.length * 0.2));
+    res.start = 60 / (median(ok.slice(0, m).map(i => i.dt)) * sub);
+    res.end = 60 / (median(ok.slice(-m).map(i => i.dt)) * sub);
+    res.change = res.end - res.start;
+    res.changeLimit = Math.max(2, 0.02 * res.tempo);
+  }
+  return res;
+}
+
+// ---------- latency measurement ----------
+// clickTimes: when clicks were scheduled; onsets: [{t, peak}] detected by the mic
+function computeLatency(clickTimes, onsets, maxLat) {
+  const need = Math.ceil(clickTimes.length * 0.75);
+  const delays = [], peaks = [];
+  for (const c of clickTimes) {
+    const o = onsets.find(o => o.t > c && o.t - c < maxLat);
+    if (o) { delays.push(o.t - c); peaks.push(o.peak); }
+  }
+  if (delays.length < need) return { ok: false, reason: 'few', found: delays.length, total: clickTimes.length };
+  const med = median(delays);
+  const good = [], goodPeaks = [];
+  delays.forEach((d, i) => { if (Math.abs(d - med) <= 0.004) { good.push(d); goodPeaks.push(peaks[i]); } });
+  if (good.length < need) return { ok: false, reason: 'unsteady', found: good.length, total: clickTimes.length };
+  if (med < 0.003) return { ok: false, reason: 'implausible', found: good.length, total: clickTimes.length };
+  return { ok: true, latency: mean(good), spreadMs: sdev(good) * 1000, clickPeak: Math.max.apply(null, goodPeaks), found: good.length, total: clickTimes.length };
+}
+// =====================================================================
+// v3: automatic subdivision, beat tracking, heatmap/histogram helpers
+// =====================================================================
+function gcd(a, b) { while (b) { const t = b; b = a % b; a = t; } return a; }
+function lcmInt(a, b) { return a / gcd(a, b) * b; }
+
+// Which grids are possible at this tempo. subMode 0 = auto, 1/2/4 = binary, 3 = triplets.
+function gridConfig(beatSec, subMode) {
+  if (subMode === 0) {
+    const ms = beatSec * 1000;
+    // finest allowed spacing: 70 ms for 8ths/16ths/triplets, 100 ms for 32nds and sextuplets
+    let nb = 1; [[2, 70], [4, 70], [8, 100]].forEach(([c, min]) => { if (ms / c >= min) nb = c; });
+    let nt = 0; [[3, 70], [6, 100]].forEach(([c, min]) => { if (ms / c >= min) nt = c; });
+    return { auto: true, nb, nt, D: lcmInt(nb, nt || 1) };
+  }
+  if (subMode === 3) return { auto: false, nb: 0, nt: 3, D: 3 };
+  return { auto: false, nb: subMode, nt: 0, D: subMode };
+}
+
+// items: [{b: position in beats (float), L: beat length in s}] sorted by b.
+// Decides per beat whether the player is in a binary (8ths/16ths) or ternary (triplet) feel,
+// then snaps every hit to the nearest position of that grid.
+function assignGrid(items, cfg, startFeel) {
+  const out = new Array(items.length);
+  const finest = Math.max(cfg.nb || 1, cfg.nt || 1);
+  const mod = (a, n) => ((a % n) + n) % n;
+  let prevFeel = startFeel || (cfg.nb ? 'B' : 'T');
+  let i = 0;
+  while (i < items.length) {
+    const j = Math.floor(items[i].b + 0.5 / finest);
+    let e = i;
+    while (e < items.length && Math.floor(items[e].b + 0.5 / finest) === j) e++;
+    let feel;
+    if (!cfg.nt) feel = 'B';
+    else if (!cfg.nb) feel = 'T';
+    else {
+      let sb = 0, st = 0, cnt = 0;
+      for (let m = i; m < e; m++) {
+        const b = items[m].b;
+        const kb = Math.round(b * cfg.nb), kt = Math.round(b * cfg.nt);
+        if (mod(kb, cfg.nb) === 0 && mod(kt, cfg.nt) === 0) continue;   // on the beat: says nothing about feel
+        const eb = b - kb / cfg.nb, et = b - kt / cfg.nt;
+        sb += eb * eb; st += et * et; cnt++;
+      }
+      feel = cnt ? (st * 1.5 < sb ? 'T' : 'B') : prevFeel;
+    }
+    prevFeel = feel;
+    const n = feel === 'T' ? cfg.nt : cfg.nb;
+    for (let m = i; m < e; m++) {
+      const it = items[m];
+      const k = Math.round(it.b * n);
+      const err = it.b - k / n;
+      const beatIdx = Math.floor(k / n);
+      out[m] = { ok: Math.abs(err) <= 0.4 / n, key: Math.round(k * cfg.D / n), k, n, p: k - beatIdx * n, beatIdx, feel, dev: err * it.L * 1000 };
+    }
+    i = e;
+  }
+  return out;
+}
+
+function histogram(devs, binMs, rangeMs) {
+  const nb = Math.round(2 * rangeMs / binMs);
+  const counts = new Array(nb).fill(0);
+  for (const d of devs) {
+    let idx = Math.floor((d + rangeMs) / binMs);
+    if (idx < 0) idx = 0; if (idx >= nb) idx = nb - 1;
+    counts[idx]++;
+  }
+  return { binMs, rangeMs, counts };
+}
+
+// sliding windows over (t, v) pairs: returns extremes of the window means / spreads
+function windowExtremes(ts, vs, win, hop, minCount) {
+  if (!ts.length) return null;
+  const tEnd = ts[ts.length - 1];
+  if (tEnd - ts[0] < win * 1.5) return null;
+  let lo = 0, hi = 0, best = null;
+  for (let c = ts[0] + win / 2; c <= tEnd - win / 2 + 1e-9; c += hop) {
+    while (lo < ts.length && ts[lo] < c - win / 2) lo++;
+    while (hi < ts.length && ts[hi] < c + win / 2) hi++;
+    const n = hi - lo; if (n < minCount) continue;
+    let s = 0, s2 = 0; for (let i = lo; i < hi; i++) { s += vs[i]; s2 += vs[i] * vs[i]; }
+    const m = s / n, sd = Math.sqrt(Math.max(0, s2 / n - m * m));
+    if (!best) best = { minMean: { t: c, v: m }, maxMean: { t: c, v: m }, maxSd: { t: c, v: sd } };
+    if (m < best.minMean.v) best.minMean = { t: c, v: m };
+    if (m > best.maxMean.v) best.maxMean = { t: c, v: m };
+    if (sd > best.maxSd.v) best.maxSd = { t: c, v: sd };
+  }
+  return best;
+}
+
+function heatAdd(heat, key, dev) { const c = heat[key] || (heat[key] = { n: 0, s: 0 }); c.n++; c.s += dev; }
+
+// ---------- click mode with automatic or fixed subdivision ----------
+// xs: hit times in s relative to the first click (latency removed when calibrated), chronological.
+function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
+  const cfg = gridConfig(beatSec, subMode);
+  const g = beatSec / (cfg.nb || cfg.nt);
+  const offset = (!calibrated && xs.length) ? circMean(xs, g) : 0;
+  // Center the grid on the player's own typical offset (median of the hits near the beat) before deciding
+  // binary vs. triplet feel; otherwise a player who is constantly 20 ms late can look like triplets.
+  const finest = Math.max(cfg.nb || 1, cfg.nt || 1);
+  const near = [];
+  xs.forEach(x => { const b = (x - offset) / beatSec, fr = b - Math.round(b); if (Math.abs(fr) < 0.5 / finest) near.push(fr * beatSec); });
+  const center = near.length >= 8 ? median(near) : 0;
+  const items = xs.map(x => ({ b: (x - offset - center) / beatSec, L: beatSec }));
+  const asg = assignGrid(items, cfg);
+  asg.forEach(a => { a.dev += center * 1000; });
+  const t0 = (countInBeats || 0) * beatSec;
+  const seen = new Set(); const hits = []; let unmatched = 0, extra = 0;
+  const heat = {};
+  for (let i = 0; i < xs.length; i++) {
+    const a = asg[i];
+    if (!a.ok) { unmatched++; continue; }
+    if (seen.has(a.key)) { extra++; continue; }
+    seen.add(a.key);
+    const bar = ((a.beatIdx % 4) + 4) % 4;
+    hits.push({ t: xs[i] - t0, dev: a.dev, n: a.n, p: a.p, bar, feel: a.feel, k: a.k });
+    heatAdd(heat, a.p === 0 ? 'D:' + bar : a.feel + a.n + ':' + bar + ':' + a.p, a.dev);
+  }
+  const n = hits.length;
+  const res = { cfg, n, hits, unmatched, extra, calibrated, heat, offsetMs: offset * 1000 };
+  if (!n) return res;
+  const devs = hits.map(h => h.dev);
+  res.bias = calibrated ? mean(devs) : null;
+  res.spread = sdev(devs);
+  res.within10 = devs.filter(d => Math.abs(d) <= 10).length / n;
+  res.within = devs.filter(d => Math.abs(d) <= 20).length / n;
+  res.duration = hits[n - 1].t - hits[0].t;
+  res.driftTotal = (n >= 12 && res.duration >= 8) ? linreg(hits.map(h => h.t), devs).slope * res.duration : null;
+  if (n >= 16) { res.spread1 = sdev(devs.slice(0, n >> 1)); res.spread2 = sdev(devs.slice(n >> 1)); }
+  if (!cfg.auto && subMode >= 2 && n >= 16) {
+    const ev = hits.filter(h => h.k % 2 === 0).map(h => h.dev), od = hits.filter(h => h.k % 2 !== 0).map(h => h.dev);
+    if (ev.length >= 8 && od.length >= 8) { res.handA = mean(ev); res.handB = mean(od); }
+  }
+  // Auto: alternating single strokes show up as an unbroken stream with one constant step on the grid.
+  // Then every other note is the other hand (A = the hand on the beat).
+  if (cfg.auto && n >= 16) {
+    const keys = hits.map(h => Math.round(h.k * cfg.D / h.n));
+    const steps = []; for (let i = 1; i < keys.length; i++) steps.push(keys[i] - keys[i - 1]);
+    const stp = median(steps);
+    if (stp > 0 && stp < cfg.D && steps.filter(d => d === stp).length >= 0.85 * steps.length) {
+      const ev = [], od = [];
+      hits.forEach((h, i) => { const q = keys[i] / stp; if (Math.abs(q - Math.round(q)) < 1e-6) (Math.round(q) % 2 === 0 ? ev : od).push(h.dev); });
+      if (ev.length >= 8 && od.length >= 8) { res.handA = mean(ev); res.handB = mean(od); res.stream = cfg.D / stp; }
+    }
+  }
+  // which note values were actually played (share of hits per level; 1 = quarter, 2 = 8th, 4 = 16th, 3 = triplets ...)
+  const lv = {};
+  hits.forEach(h => { const L = h.p === 0 ? 1 : h.n / gcd(h.p, h.n); lv[L] = (lv[L] || 0) + 1; });
+  res.levels = Object.keys(lv).map(Number).map(L => ({ L, share: lv[L] / n })).sort((a, b) => a.L - b.L);
+  res.hist = histogram(devs, 5, 60);
+  res.extremes = windowExtremes(hits.map(h => h.t), devs, 30, 5, 20);
+  res.ternaryShare = hits.filter(h => h.feel === 'T' && h.p !== 0).length / n;
+  return res;
+}
+
+// ---------- tempo estimation from onsets (no click) ----------
+const T_MIN = 55, T_MAX = 200, T_STEP = 1.01;
+const T_GRID = (() => { const a = []; for (let t = T_MIN; t <= T_MAX; t *= T_STEP) a.push(t); return a; })();
+function tempoPrior(center, sigmaOct) { return T_GRID.map(t => { const z = Math.log2(t / center) / sigmaOct; return Math.exp(-0.5 * z * z); }); }
+
+// Periodicity scores for every candidate tempo in T_GRID, from onsets inside [a, b].
+// Two interval histograms: one over all onsets, one over accented ("strong") onsets only.
+// A beat candidate must (1) recur between accents and (2) have its half (or third) filled with notes.
+// That rejects the 2/3 and 4/3 errors that a plain interval histogram makes on dense 8th/16th streams.
+function ioiScores(ts, ws, ss, lo, hi, a, b) {
+  const BIN = 0.005, MAXLAG = 2.4, NB = Math.ceil(MAXLAG / BIN) + 3;
+  const HA = new Float64Array(NB), HS = new Float64Array(NB);
+  const span = Math.max(b - a, 1);
+  for (let i = lo; i < hi; i++) {
+    for (let j = i + 1; j < hi; j++) {
+      const lag = ts[j] - ts[i];
+      if (lag > MAXLAG) break;
+      if (lag < 0.05) continue;
+      const bias = 1 / Math.max(0.2, 1 - lag / span);       // undo "fewer long pairs" in a finite window
+      const wa = ws[i] * ws[j] * bias, wsg = ss[i] * ss[j] * bias;
+      const k = Math.round(lag / BIN);
+      if (k > 1 && k < NB - 2) {
+        HA[k - 2] += 0.25 * wa; HA[k - 1] += 0.6 * wa; HA[k] += wa; HA[k + 1] += 0.6 * wa; HA[k + 2] += 0.25 * wa;
+        if (wsg > 0) { HS[k - 2] += 0.25 * wsg; HS[k - 1] += 0.6 * wsg; HS[k] += wsg; HS[k + 1] += 0.6 * wsg; HS[k + 2] += 0.25 * wsg; }
+      }
+    }
+  }
+  let ma = 0, ms = 0; for (let k = 0; k < NB; k++) { if (HA[k] > ma) ma = HA[k]; if (HS[k] > ms) ms = HS[k]; }
+  if (ma <= 0) return null;
+  const useS = ms > 0 ? HS : HA, mS = ms > 0 ? ms : ma;
+  const at = (H, m, lag) => { const x = lag / BIN, k = Math.floor(x), f = x - k; return (k >= 0 && k + 1 < NB) ? (H[k] * (1 - f) + H[k + 1] * f) / m : 0; };
+  const S = T_GRID.map(t => {
+    const P = 60 / t;
+    const accents = at(useS, mS, P) + 0.5 * at(useS, mS, 2 * P);
+    const sub = Math.max(0.6 * at(HA, ma, P / 2), 0.3 * at(HA, ma, P / 3), 0.3 * at(HA, ma, 2 * P / 3));
+    return accents + sub;
+  });
+  let mx = 0; for (const v of S) if (v > mx) mx = v;
+  return mx > 0 ? S.map(v => v / mx) : null;
+}
+// onset weights: general (all notes count) and accent (only clearly louder notes count)
+function onsetWeights(peaks) {
+  const med = median(peaks) || 1;
+  return {
+    ws: peaks.map(p => Math.min(3, Math.max(0.3, Math.sqrt(p / med)))),
+    ss: peaks.map(p => Math.min(1.5, Math.max(0, (p / med - 0.7) / 0.8)))
+  };
+}
+function lowerBound(arr, x) { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; } return lo; }
+
+// quick estimate for the live display (last few seconds)
+function liveTempo(ts, peaks, now, prev, prior, minT) {
+  const a = Math.max(now - 6, minT != null ? minT : -Infinity), lo = lowerBound(ts, a), hi = ts.length;
+  if (hi - lo < 8) return null;
+  const w = onsetWeights(peaks.slice(lo, hi));
+  const S = ioiScores(ts.slice(lo, hi), w.ws, w.ss, 0, hi - lo, a, now);
+  if (!S) return null;
+  let best = -1, bi = -1;
+  for (let k = 0; k < S.length; k++) {
+    let v = S[k] * prior[k];
+    if (prev) { const z = Math.log2(T_GRID[k] / prev) / 0.08; v *= 0.35 + Math.exp(-0.5 * z * z); }
+    if (v > best) { best = v; bi = k; }
+  }
+  if (bi > 0 && bi < S.length - 1) {                     // parabolic refinement between grid steps
+    const y0 = S[bi - 1] * prior[bi - 1], y1 = S[bi] * prior[bi], y2 = S[bi + 1] * prior[bi + 1];
+    const den = y0 - 2 * y1 + y2;
+    if (den < 0) { const off = Math.max(-0.5, Math.min(0.5, 0.5 * (y0 - y2) / den)); return T_GRID[bi] * Math.pow(T_STEP, off); }
+  }
+  return T_GRID[bi];
+}
+
+// full analysis of a free session: tempo curve, beats, micro-timing
+function analyzeFree3(onsets, opts) {
+  opts = opts || {};
+  const res = { segments: [], beats: [], tempo: [], micro: [], heat: {}, n: onsets.length };
+  if (onsets.length < 16) return res;
+  const ts = onsets.map(o => o.t);
+  const { ws, ss } = onsetWeights(onsets.map(o => o.strength || o.peak || 1));
+  const prior = tempoPrior(opts.target || 130, opts.target ? 0.25 : 0.9);
+  const scale = opts.scale || 1;
+  // split into segments at pauses
+  const segs = []; let s0 = 0;
+  for (let i = 1; i <= ts.length; i++) if (i === ts.length || ts[i] - ts[i - 1] > 4) { segs.push([s0, i]); s0 = i; }
+  for (const [lo, hi] of segs) {
+    if (hi - lo < 16 || ts[hi - 1] - ts[lo] < 6) continue;
+    const a = ts[lo], b = ts[hi - 1];
+    // 1) tempo per window + Viterbi smoothing
+    const centers = [];
+    if (b - a <= 8) centers.push((a + b) / 2); else for (let c = a + 4; c <= b - 4 + 1e-9; c += 1) centers.push(c);
+    const E = [];
+    for (const c of centers) {
+      const wlo = lowerBound(ts, c - 4), whi = lowerBound(ts, c + 4);
+      const S = (whi - wlo >= 8) ? ioiScores(ts, ws, ss, wlo, whi, c - 4, c + 4) : null;
+      E.push(S ? S.map((v, k) => Math.log(1e-3 + v * prior[k])) : T_GRID.map((_, k) => Math.log(1e-3 + prior[k])));
+    }
+    const K = T_GRID.length, MAXJ = 6, LAMBDA = 0.35;
+    let dp = E[0].slice(); const back = [];
+    for (let w = 1; w < E.length; w++) {
+      const nd = new Array(K), bk = new Int16Array(K);
+      for (let k = 0; k < K; k++) {
+        let bv = -Infinity, bj = k;
+        for (let d = -MAXJ; d <= MAXJ; d++) { const j = k + d; if (j < 0 || j >= K) continue; const v = dp[j] - LAMBDA * d * d; if (v > bv) { bv = v; bj = j; } }
+        nd[k] = bv + E[w][k]; bk[k] = bj;
+      }
+      dp = nd; back.push(bk);
+    }
+    let kb = 0; for (let k = 1; k < K; k++) if (dp[k] > dp[kb]) kb = k;
+    const path = new Array(E.length); path[E.length - 1] = kb;
+    for (let w = E.length - 1; w > 0; w--) path[w - 1] = back[w - 1][path[w]];
+    const tempoAt = (t) => {
+      let T;
+      if (t <= centers[0]) T = T_GRID[path[0]];
+      else if (t >= centers[centers.length - 1]) T = T_GRID[path[path.length - 1]];
+      else { const i = Math.floor(t - centers[0]); const f = t - centers[0] - i; T = T_GRID[path[i]] * (1 - f) + T_GRID[path[Math.min(i + 1, path.length - 1)]] * f; }
+      return T * scale;
+    };
+    // 2) beat tracking (phase locked to strong onsets)
+    const P0 = 60 / tempoAt(a);
+    let bestPh = a, bestSc = -1;
+    const iEnd = lowerBound(ts, a + 8);
+    for (let i = lo; i < iEnd && ts[i] < a + 2 * P0; i++) {
+      let sc = 0;
+      for (let m = lo; m < iEnd; m++) { let d = ((ts[m] - ts[i]) / P0) % 1; if (d < 0) d += 1; d = Math.min(d, 1 - d) * P0; sc += ws[m] * Math.exp(-0.5 * (d / (0.04 * P0)) ** 2); }
+      if (sc > bestSc) { bestSc = sc; bestPh = ts[i]; }
+    }
+    const raw = [], anch = [], aw = [];
+    let bt = bestPh;
+    while (bt - P0 > a - 0.5 * P0) bt -= P0;           // extend back over a pickup
+    let guard = 0;
+    while (bt < b + 0.5 * (60 / tempoAt(b)) && guard++ < 100000) {
+      const P = 60 / tempoAt(bt);
+      const i0 = lowerBound(ts, bt - 0.25 * P), i1 = lowerBound(ts, bt + 0.25 * P);
+      let ba = -1, bs = 0;
+      for (let i = i0; i < i1; i++) { const d = ts[i] - bt; const sc = ws[i] * Math.exp(-0.5 * (d / (0.08 * P)) ** 2); if (sc > bs) { bs = sc; ba = i; } }
+      raw.push(bt); anch.push(ba >= 0 ? ts[ba] : null); aw.push(ba >= 0 ? ws[ba] : 0);
+      const cur = ba >= 0 ? bt + 0.35 * (ts[ba] - bt) : bt;
+      bt = cur + 60 / tempoAt(cur);
+    }
+    // 3) smooth pulse: local weighted linear fit through the anchors
+    const beats = raw.map((r, j) => {
+      let sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0, cnt = 0;
+      for (let m = Math.max(0, j - 6); m <= Math.min(raw.length - 1, j + 6); m++) {
+        if (anch[m] === null) continue;
+        const u = Math.abs(m - j) / 7, w = aw[m] * Math.pow(1 - u * u * u, 3);
+        sw += w; sx += w * m; sy += w * anch[m]; sxx += w * m * m; sxy += w * m * anch[m]; cnt++;
+      }
+      if (cnt < 4 || sw <= 0) return r;
+      const den = sw * sxx - sx * sx;
+      if (Math.abs(den) < 1e-9) return r;
+      const slope = (sw * sxy - sx * sy) / den, icpt = (sy - slope * sx) / sw;
+      return icpt + slope * j;
+    });
+    for (let j = 1; j < beats.length; j++) if (beats[j] <= beats[j - 1] + 0.1) beats[j] = beats[j - 1] + 0.1;
+    // 4) micro-timing of every onset relative to the pulse
+    const L0 = median(beats.slice(1).map((v, j) => v - beats[j]));
+    const cfg = gridConfig(L0, 0);
+    if (!res.cfg || (hi - lo) > res.cfgN) { res.cfg = cfg; res.cfgN = hi - lo; }
+    const items = [], idx = [];
+    for (let i = lo; i < hi; i++) {
+      const t = ts[i];
+      const j = lowerBound(beats, t + 1e-9) - 1;
+      if (j < 0 || j >= beats.length - 1) continue;
+      const L = beats[j + 1] - beats[j];
+      items.push({ b: j + (t - beats[j]) / L, L }); idx.push(i);
+    }
+    const asg = assignGrid(items, cfg);
+    const seen = new Set();
+    const beatOffset = res.beats.length;
+    for (let m = 0; m < items.length; m++) {
+      const q = asg[m];
+      if (!q.ok || seen.has(q.key)) continue;
+      seen.add(q.key);
+      res.micro.push({ t: ts[idx[m]], dev: q.dev, n: q.n, p: q.p, feel: q.feel });
+      heatAdd(res.heat, q.p === 0 ? 'D:0' : q.feel + q.n + ':0:' + q.p, q.dev);
+    }
+    for (let j = 0; j + 1 < beats.length; j++) res.tempo.push({ t: beats[j], bpm: 60 / (beats[j + 1] - beats[j]) });
+    res.beats.push(...beats);
+    const segTempo = res.tempo.filter(p => p.t >= a && p.t <= b).map(p => p.bpm);
+    const m8 = Math.max(8, Math.floor(segTempo.length * 0.2));
+    const segPts = res.tempo.filter(p => p.t >= a && p.t <= b);
+    res.segments.push({ a, b, beatOffset, n: hi - lo, tempo: median(segTempo), start: median(segTempo.slice(0, m8)), end: median(segTempo.slice(-m8)),
+      extremes: windowExtremes(segPts.map(p => p.t), segPts.map(p => p.bpm), 30, 5, 20) });
+  }
+  const bpm = res.tempo.map(p => p.bpm);
+  if (bpm.length >= 8) {
+    res.tempoMedian = median(bpm);
+    const m8 = Math.max(8, Math.floor(bpm.length * 0.2));
+    res.start = median(bpm.slice(0, m8)); res.end = median(bpm.slice(-m8));
+    res.extremes = windowExtremes(res.tempo.map(p => p.t), bpm, 30, 5, 20);
+  }
+  const devs = res.micro.map(m => m.dev);
+  if (devs.length >= 8) {
+    res.spread = sdev(devs);
+    res.within10 = devs.filter(d => Math.abs(d) <= 10).length / devs.length;
+    res.within = devs.filter(d => Math.abs(d) <= 20).length / devs.length;
+    res.hist = histogram(devs, 5, 60);
+    res.ternaryShare = res.micro.filter(m => m.feel === 'T' && m.p !== 0).length / devs.length;
+  }
+  if (ts.length) res.duration = ts[ts.length - 1] - ts[0];
+  return res;
+}
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const SUB_NAMES = { 0: 'Auto', 1: 'Viertel', 2: 'Achtel', 3: 'Triolen', 4: '16tel' };
+  const OUT_NAMES = { headphones: 'Kopfhörer', speaker: 'Lautsprecher' };
+  const K_SET = 'dtt.settings.v2', K_CAL = 'dtt.calibration.v2', K_HIST = 'dtt.history.v2';
+
+  // ---------- storage ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+  };
+  const clampInt = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  const saved = store.get(K_SET, {}) || {};
+  const settings = {
+    mode: saved.mode === 'free' ? 'free' : 'click',
+    bpm: clampInt(saved.bpm, 30, 300, 100),
+    sub: [0, 1, 2, 3, 4].includes(saved.sub) ? saved.sub : 0,
+    output: saved.output === 'speaker' ? 'speaker' : 'headphones',
+    sens: clampInt(saved.sens, 0, 100, 55),
+    clickVol: clampInt(saved.clickVol, 5, 100, 70),
+    ftarget: saved.ftarget === true,
+    v: 3
+  };
+  if (saved.v !== 3) settings.sub = 0;          // new in this version: automatic note value as default
+  let cal = store.get(K_CAL, {}) || {};
+  const saveSettings = () => store.set(K_SET, settings);
+  const clickGain = () => Math.pow(settings.clickVol / 100, 2);
+
+  // ---------- state ----------
+  let ctx = null, stream = null, srcNode = null, procNode = null, sinkNode = null, clickBus = null, detector = null;
+  let noiseFloor = 0.002, phase = 'idle', busy = false, runToken = 0;
+  let session = null, onsetSink = null, lastResult = null;
+  let schedTimer = null, nextBeat = 0, beatIdx = 0;
+  const uiBeats = [];
+  let rafId = 0, meterValue = 0, wakeLock = null, statusText = '';
+  let chartVals = [], chartMode = settings.mode, pulseTimer = null;
+
+  // ---------- formatting ----------
+  function setStatus(t) { statusText = t; $('status').textContent = t; }
+  const r0 = (v) => Math.round(v);
+  const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
+  const signed = (v) => { const r = Math.round(v); return r > 0 ? '+' + r : r < 0 ? '−' + Math.abs(r) : '0'; };
+  const signed1 = (v) => { const r = Math.round(v * 10) / 10; return (r > 0 ? '+' : r < 0 ? '−' : '') + f1(Math.abs(r)); };
+  const mmss = (sec) => { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+  const locked = () => phase !== 'idle' || busy;
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  // ---------- setup controls ----------
+  function renderSetup() {
+    const click = settings.mode === 'click';
+    document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === settings.mode)));
+    document.querySelectorAll('[data-sub]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sub) === settings.sub)));
+    document.querySelectorAll('[data-output]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.output === settings.output)));
+    document.querySelectorAll('[data-ftarget]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.ftarget === '1') === settings.ftarget)));
+    $('freeTempoField').hidden = click;
+    $('tempoField').hidden = !click && !settings.ftarget;
+    $('tempoLabel').textContent = click ? 'Tempo' : 'Zieltempo';
+    $('subField').hidden = !click;
+    $('outputField').hidden = !click;
+    $('beats').hidden = !click;
+    $('bpmOut').textContent = settings.bpm;
+    $('bpmRange').value = settings.bpm;
+    $('sens').value = settings.sens;
+    $('clickVol').value = settings.clickVol;
+    $('st1l').textContent = 'Schläge';
+    $('st2l').textContent = click ? 'Tendenz' : 'Tempo';
+    $('st3l').textContent = click ? 'Streuung' : settings.ftarget ? 'zum Ziel' : 'seit Start';
+    renderStageNote();
+    renderCalInfo();
+  }
+  function setBpm(v) { if (locked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; }
+  function holdRepeat(btn, fn) {
+    let t1 = null, t2 = null;
+    const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
+    btn.addEventListener('pointerdown', (e) => { if (btn.disabled) return; e.preventDefault(); fn(); stop(); t1 = setTimeout(() => { t2 = setInterval(fn, 70); }, 400); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+    btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
+  }
+  holdRepeat($('bpmDown'), () => setBpm(settings.bpm - 1));
+  holdRepeat($('bpmUp'), () => setBpm(settings.bpm + 1));
+  $('bpmRange').addEventListener('input', (e) => setBpm(e.target.value));
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.mode = b.dataset.mode; saveSettings(); resetLive(); renderSetup(); }));
+  document.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.sub = Number(b.dataset.sub); saveSettings(); renderSetup(); }));
+  document.querySelectorAll('[data-output]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.output = b.dataset.output; saveSettings(); renderSetup(); }));
+  document.querySelectorAll('[data-ftarget]').forEach(b => b.addEventListener('click', () => { if (locked()) return; settings.ftarget = b.dataset.ftarget === '1'; saveSettings(); renderSetup(); }));
+  $('sens').addEventListener('input', (e) => { settings.sens = clampInt(e.target.value, 0, 100, 55); saveSettings(); applyThreshold(); });
+  $('clickVol').addEventListener('input', (e) => {
+    settings.clickVol = clampInt(e.target.value, 5, 100, 70); saveSettings();
+    if (clickBus && ctx) clickBus.gain.setTargetAtTime(clickGain(), ctx.currentTime, 0.02);
+    applyThreshold();
+  });
+
+  function setLockedUI(running) {
+    const btn = $('startBtn');
+    btn.textContent = running ? 'Stop' : 'Start';
+    btn.classList.toggle('stop', running);
+    document.querySelectorAll('[data-mode],[data-sub],[data-output],[data-ftarget],#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button')
+      .forEach(el => { el.disabled = running; });
+  }
+
+  function renderStageNote() {
+    const n = $('stageNote');
+    n.textContent = '';
+    if (settings.mode === 'free') {
+      n.textContent = settings.ftarget
+        ? 'Spiel einfach deinen Song. Die Zeitleiste zeigt, wie weit du vom Zieltempo abweichst.'
+        : 'Spiel einfach deinen Song oder Groove – das Tempo wird aus dem ganzen Groove erkannt, auch mit Fills und Pausen.';
+      return;
+    }
+    const c = cal[settings.output];
+    if (settings.output === 'speaker') {
+      n.textContent = c
+        ? `Der Klick wird herausgefiltert, ${c.latencyMs} ms Latenz werden ausgeglichen. Tipp: Klick eher leise stellen, sonst werden leise Schläge mit herausgefiltert.`
+        : 'Beim ersten Start wird die Latenz gemessen: 8 Klicks, dabei nicht spielen. Danach wird der Klick automatisch herausgefiltert.';
+      return;
+    }
+    if (c) { n.textContent = `${c.latencyMs} ms Latenz werden ausgeglichen.`; return; }
+    n.append('Für „früh“ und „spät“ und die Heatmap einmal die Latenz messen – Streuung und Drift stimmen auch ohne. ');
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'text-btn'; b.textContent = 'Latenz jetzt messen';
+    b.addEventListener('click', () => { $('settings').open = true; measureLatencyStandalone(); });
+    n.append(b);
+  }
+
+  function renderCalInfo() {
+    const box = $('latValues');
+    box.textContent = '';
+    ['headphones', 'speaker'].forEach(o => {
+      const c = cal[o];
+      const s = document.createElement('span');
+      s.textContent = `${OUT_NAMES[o]}: ` + (c ? `${c.latencyMs} ms (gemessen am ${new Date(c.date).toLocaleDateString('de-DE')})` : 'noch nicht gemessen');
+      box.append(s);
+    });
+    $('latBtn').textContent = `Latenz messen (${OUT_NAMES[settings.output]})`;
+    $('latReset').hidden = !cal[settings.output];
+    $('latReset').textContent = 'Messwert für diesen Ausgang löschen';
+    $('latReset').dataset.armed = '';
+  }
+  $('latBtn').addEventListener('click', () => measureLatencyStandalone());
+  $('latReset').addEventListener('click', () => {
+    const b = $('latReset');
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen zum Löschen'; return; }
+    delete cal[settings.output]; store.set(K_CAL, cal); renderCalInfo(); renderStageNote();
+  });
+
+  // ---------- problem banner / diagnostics ----------
+  const isEmbedded = () => { try { return window.self !== window.top; } catch (e) { return true; } };
+  const hasGUM = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  function micPolicy() {
+    try {
+      const p = document.permissionsPolicy || document.featurePolicy;
+      if (p && typeof p.allowsFeature === 'function') return !!p.allowsFeature('microphone');
+    } catch (e) { /* not supported */ }
+    return null;
+  }
+  async function micPermission() {
+    try { if (navigator.permissions && navigator.permissions.query) return (await navigator.permissions.query({ name: 'microphone' })).state; } catch (e) { /* not supported */ }
+    return null;
+  }
+  const INFO = {
+    embed: { title: 'Diese Ansicht sperrt das Mikrofon', text: 'Die Seite läuft gerade eingebettet, und die Einbettung gibt das Mikrofon nicht frei. Innerhalb der Seite lässt sich das nicht ändern.',
+      steps: ['Öffne den Link dieser Seite direkt in Chrome statt in der Claude-App.', 'Erscheint dieser Hinweis auch dort, gibt die Ansicht das Mikrofon grundsätzlich nicht frei.'] },
+    denied: { title: 'Mikrofonzugriff verweigert', text: 'Der Zugriff wurde abgelehnt – im Dialog, dauerhaft für diese Seite oder für den ganzen Browser.',
+      steps: ['In Chrome auf das Symbol links neben der Adresse tippen, das Mikrofon erlauben und die Seite neu laden.', 'Android-Einstellungen → Apps → Chrome → Berechtigungen → Mikrofon auf „Zulassen“ (Bezeichnungen je nach Handy leicht anders).', 'In der Claude-App geöffnet? Dann den Link in Chrome öffnen.'] },
+    noApi: { title: 'Hier gibt es keinen Mikrofonzugang', text: 'Der Browser bzw. die Ansicht, in der die Seite gerade läuft, unterstützt keinen Mikrofonzugriff.',
+      steps: ['Öffne den Link direkt in einem aktuellen Chrome statt in der Claude-App.'] },
+    notFound: { title: 'Kein Mikrofon gefunden', text: 'Das Gerät meldet kein nutzbares Mikrofon.',
+      steps: ['Headset oder externes Mikrofon abstecken bzw. prüfen und erneut starten.'] },
+    busy: { title: 'Das Mikrofon ist belegt', text: 'Eine andere App nutzt gerade das Mikrofon, zum Beispiel ein Telefonat, eine Sprachaufnahme oder ein Sprachassistent.',
+      steps: ['Die andere App schließen und erneut starten.'] },
+    micOther: { title: 'Mikrofon konnte nicht gestartet werden', text: 'Der Browser hat den Start des Mikrofons abgebrochen.',
+      steps: ['Seite neu laden und erneut starten.', 'Die technischen Details unten zeigen die genaue Ursache.'] },
+    audio: { title: 'Audio-Verarbeitung konnte nicht starten', text: 'Das Mikrofon selbst ist nicht das Problem – die Audio-Verarbeitung im Browser ließ sich nicht starten.',
+      steps: ['Seite neu laden und erneut starten.', 'Chrome auf die neueste Version aktualisieren.'] }
+  };
+  function micErrorInfo(err) {
+    const name = err && err.name;
+    if (name === 'NoMediaDevices' || name === 'NotSupportedError') return INFO.noApi;
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') return micPolicy() === false ? INFO.embed : INFO.denied;
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') return INFO.notFound;
+    if (name === 'NotReadableError' || name === 'TrackStartError') return INFO.busy;
+    return INFO.micOther;
+  }
+  async function showProblem(info, err) {
+    $('problemTitle').textContent = info.title;
+    $('problemText').textContent = info.text;
+    const ol = $('problemSteps'); ol.textContent = '';
+    info.steps.forEach(s => { const li = document.createElement('li'); li.textContent = s; ol.append(li); });
+    const pol = micPolicy();
+    const lines = [];
+    if (err) lines.push(`Fehler: ${err.name || 'Error'}${err.message ? ' – ' + err.message : ''}`);
+    lines.push(`Sicherer Kontext: ${window.isSecureContext ? 'ja' : 'nein'}`);
+    lines.push(`Eingebettet: ${isEmbedded() ? 'ja' : 'nein'}`);
+    lines.push(`Mikrofon-Freigabe der Einbettung: ${pol === true ? 'erlaubt' : pol === false ? 'gesperrt' : 'unbekannt'}`);
+    lines.push(`Mikrofon-Schnittstelle: ${hasGUM() ? 'vorhanden' : 'fehlt'}`);
+    $('problemTech').textContent = lines.join('\n') + '\nBerechtigung: …';
+    $('problem').hidden = false;
+    const perm = await micPermission();
+    $('problemTech').textContent = lines.join('\n') + `\nBerechtigung: ${perm || 'unbekannt'}\nBrowser: ${navigator.userAgent}`;
+  }
+  function hideProblem() { $('problem').hidden = true; }
+  function reportError(kind, err) {
+    const info = kind === 'mic' ? micErrorInfo(err) : INFO.audio;
+    showProblem(info, err);
+    setStatus(info.title + ' – Hinweis oben.');
+    try { $('problem').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+  }
+  async function precheck() {
+    if (!hasGUM()) { showProblem(INFO.noApi, null); return; }
+    if (micPolicy() === false) { showProblem(INFO.embed, null); return; }
+    if ((await micPermission()) === 'denied') showProblem(INFO.denied, null);
+  }
+
+  // ---------- audio engine ----------
+  function createContext() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { const e = new Error('Web Audio wird nicht unterstützt'); e.name = 'NoWebAudio'; throw e; }
+    ctx = new AC({ latencyHint: 'interactive' });
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  }
+  async function openMic() {
+    if (!hasGUM()) { const e = new Error('navigator.mediaDevices.getUserMedia fehlt'); e.name = 'NoMediaDevices'; throw e; }
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    } catch (e) {
+      if (e && (e.name === 'OverconstrainedError' || e.name === 'ConstraintNotSatisfiedError' || e.name === 'TypeError')) {
+        return await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      throw e;
+    }
+  }
+  function buildGraph() {
+    srcNode = ctx.createMediaStreamSource(stream);
+    procNode = ctx.createScriptProcessor(1024, 1, 1);
+    sinkNode = ctx.createGain(); sinkNode.gain.value = 0;
+    clickBus = ctx.createGain(); clickBus.gain.value = clickGain();
+    detector = new OnsetDetector(ctx.sampleRate, { onOnset: onOnset });
+    let lastT = null;
+    procNode.onaudioprocess = (e) => {
+      if (!detector) return;
+      const input = e.inputBuffer.getChannelData(0);
+      let t = e.playbackTime;
+      if (!(t > 0)) t = lastT !== null ? lastT + input.length / ctx.sampleRate : ctx.currentTime;
+      lastT = t;
+      detector.process(input, t);
+      const out = e.outputBuffer.getChannelData(0);
+      if (out) out.fill(0);
+    };
+    srcNode.connect(procNode);
+    procNode.connect(sinkNode);
+    sinkNode.connect(ctx.destination);
+    clickBus.connect(ctx.destination);
+  }
+  function teardown() {
+    if (schedTimer) { clearTimeout(schedTimer); schedTimer = null; }
+    if (procNode) { procNode.onaudioprocess = null; try { procNode.disconnect(); } catch (e) { /* ignore */ } }
+    [srcNode, sinkNode, clickBus].forEach(nd => { if (nd) { try { nd.disconnect(); } catch (e) { /* ignore */ } } });
+    if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch (e) { /* ignore */ } });
+    if (ctx) ctx.close().catch(() => {});
+    ctx = stream = srcNode = procNode = sinkNode = clickBus = detector = null;
+    uiBeats.length = 0;
+    onsetSink = null;
+    releaseWakeLock();
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    meterValue = 0; renderMeter(0, null);
+    lightBeat(-1);
+  }
+  function measureNoise(ms) {
+    return new Promise(res => {
+      detector.startNoiseMeasure();
+      setTimeout(() => { if (detector) noiseFloor = detector.stopNoiseMeasure(); res(); }, ms);
+    });
+  }
+  function baseThreshold() { return Math.max(noiseFloor * sensFactor(settings.sens), 0.0015); }
+  function applyThreshold() {
+    if (!detector || phase === 'latcal') return;
+    let thr = baseThreshold();
+    const sc = cal.speaker;
+    if (session && session.mode === 'click' && session.output === 'speaker' && sc && sc.clickPeakPerGain) {
+      thr = Math.max(thr, 1.5 * sc.clickPeakPerGain * clickGain());
+    }
+    detector.threshold = thr;
+  }
+  function playClick(time, accent) {
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.frequency.value = accent ? 2000 : 1500;
+    const peak = accent ? 1.0 : 0.75;
+    g.gain.setValueAtTime(0, time);
+    g.gain.linearRampToValueAtTime(peak, time + 0.0005);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    osc.connect(g); g.connect(clickBus);
+    osc.start(time); osc.stop(time + 0.06);
+  }
+  const wait = (ms) => new Promise(res => setTimeout(res, ms));
+  async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; } }
+  function releaseWakeLock() { try { if (wakeLock) wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
+
+  async function startEngine(tok) {
+    try { createContext(); } catch (e) { reportError('audio', e); return false; }
+    setStatus('Mikrofon wird gestartet …');
+    let s;
+    try { s = await openMic(); } catch (e) { if (tok === runToken) { teardown(); reportError('mic', e); } return false; }
+    if (tok !== runToken) { s.getTracks().forEach(t => t.stop()); return false; }
+    stream = s;
+    try { buildGraph(); } catch (e) { teardown(); reportError('audio', e); return false; }
+    hideProblem();
+    startRaf();
+    phase = 'noise';
+    setStatus('Kurz still sein – Umgebungsgeräusch wird gemessen …');
+    await measureNoise(900);
+    return tok === runToken && !!ctx;
+  }
+
+  // ---------- latency measurement ----------
+  async function runLatency(output, tok) {
+    phase = 'latcal';
+    const N = 8, spacing = 0.75, lead = output === 'headphones' ? 1.6 : 0.6;
+    const onsets = [];
+    onsetSink = (t, peak) => onsets.push({ t, peak });
+    detector.threshold = Math.max(noiseFloor * 5, 0.001);
+    const gain = clickGain();
+    const start = ctx.currentTime + lead;
+    const times = [];
+    for (let i = 0; i < N; i++) { const t = start + i * spacing; times.push(t); playClick(t, i % 4 === 0); uiBeats.push({ time: t, idx: i }); }
+    const hint = output === 'headphones' ? 'Ohrhörer ans Handy-Mikrofon halten, nicht spielen' : 'Nicht spielen';
+    const t0 = performance.now(), total = (lead + N * spacing + 0.7) * 1000;
+    while (performance.now() - t0 < total) {
+      if (tok !== runToken || !ctx) return null;
+      const el = (performance.now() - t0) / 1000;
+      const i = Math.min(N, Math.max(0, Math.floor((el - lead) / spacing) + 1));
+      setStatus(`Latenz-Messung: ${hint} … ${i}/${N}`);
+      await wait(100);
+    }
+    onsetSink = null;
+    const r = computeLatency(times, onsets, 0.6);
+    if (r.ok) {
+      const entry = { latencyMs: Math.round(r.latency * 1000), spreadMs: Math.round(r.spreadMs * 10) / 10, date: Date.now() };
+      if (output === 'speaker') entry.clickPeakPerGain = r.clickPeak / gain;
+      cal[output] = entry; store.set(K_CAL, cal);
+    }
+    return r;
+  }
+  function latencyFailText(r) {
+    if (r.reason === 'few') return `Latenz-Messung: nur ${r.found} von ${r.total} Klicks gehört. Lauter stellen, Umgebung ruhiger machen und erneut versuchen.`;
+    if (r.reason === 'unsteady') return 'Latenz-Messung ungleichmäßig – vermutlich Nebengeräusche. Bitte in ruhiger Umgebung wiederholen.';
+    return 'Latenz-Messung nicht plausibel. Bitte wiederholen.';
+  }
+  async function measureLatencyStandalone() {
+    if (locked()) return;
+    busy = true;
+    const tok = ++runToken;
+    const output = settings.output;
+    setLockedUI(true);
+    try { $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    const ok = await startEngine(tok);
+    if (!ok) { if (tok === runToken) finishIdle(); return; }
+    const r = await runLatency(output, tok);
+    if (tok !== runToken || !r) return;
+    finishIdle();
+    setStatus(r.ok ? `Latenz gemessen: ${Math.round(r.latency * 1000)} ms (${OUT_NAMES[output]}).` : latencyFailText(r));
+  }
+  function finishIdle() {
+    runToken++;
+    phase = 'idle';
+    teardown();
+    busy = false;
+    setLockedUI(false);
+    renderCalInfo();
+    renderStageNote();
+  }
+
+  // ---------- sessions ----------
+  $('startBtn').addEventListener('click', () => { if (locked()) stopAll('user'); else startSession(); });
+
+  async function startSession() {
+    busy = true;
+    const tok = ++runToken;
+    const mode = settings.mode, output = settings.output;
+    $('summary').hidden = true;
+    $('leakWarn').hidden = true;
+    resetLive();
+    setLockedUI(true);
+    try { $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    const ok = await startEngine(tok);
+    if (!ok) { if (tok === runToken) finishIdle(); return; }
+    if (mode === 'click' && output === 'speaker' && !cal.speaker) {
+      const r = await runLatency('speaker', tok);
+      if (tok !== runToken || !r) return;
+      renderCalInfo();
+      if (!r.ok) { finishIdle(); setStatus(latencyFailText(r)); return; }
+    }
+    const c = mode === 'click' ? cal[output] : null;
+    const target = mode === 'free' && settings.ftarget ? settings.bpm : null;
+    session = {
+      mode, output, bpm: settings.bpm, subMode: settings.sub, target,
+      calibrated: !!c, latency: c ? c.latencyMs / 1000 : 0,
+      xs: [], countInOnsets: [], countInClicks: [], leakChecked: false,
+      fOn: [], fts: [], fpk: [], lastLive: -1, livePrev: null, liveHist: [], startTempo: null, secStart: 0,
+      onsets: 0, started: Date.now()
+    };
+    phase = 'session';
+    applyThreshold();
+    lastResult = null;
+    if (mode === 'click') {
+      startMetronome();
+      TL.reset('dev', { showBias: session.calibrated, relative: !session.calibrated });
+    } else {
+      session.t0 = ctx.currentTime;
+      session.prior = tempoPrior(target || 130, target ? 0.25 : 0.9);
+      setStatus('Läuft – spiel los.');
+      TL.reset('tempo', { ref: target, refLabel: target ? 'Zieltempo' : 'Start' });
+    }
+    $('tlKind').hidden = true;
+    $('timeline').hidden = false;
+    busy = false;
+    requestWakeLock();
+  }
+
+  function stopAll(reason) {
+    const s = session, wasSession = phase === 'session';
+    session = null;
+    finishIdle();
+    setStatus(reason === 'hidden' ? 'Gestoppt, weil die Seite in den Hintergrund ging.' : 'Gestoppt.');
+    if (wasSession && s) finishSession(s);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && (phase === 'session' || phase === 'latcal' || phase === 'noise')) stopAll('hidden');
+  });
+
+  function startMetronome() {
+    const s = session;
+    s.beat = 60 / s.bpm;
+    s.cfg = gridConfig(s.beat, s.subMode);
+    s.g = s.beat / (s.cfg.nb || s.cfg.nt);
+    s.finest = Math.max(s.cfg.nb || 1, s.cfg.nt || 1);
+    s.lc = { sin: 0, cos: 0, groupJ: null, group: [], prevFeel: s.cfg.nb ? 'B' : 'T', lastFeel: null, seen: new Set(), n: 0, mean: 0, m2: 0, near: [], center: 0 };
+    s.beat0 = ctx.currentTime + 0.4;
+    s.countInEnd = s.beat0 + 4 * s.beat;
+    beatIdx = 0;
+    nextBeat = s.beat0;
+    setStatus('Einzählen …');
+    schedule();
+  }
+  function schedule() {
+    if (!ctx || !session || session.mode !== 'click') return;
+    const s = session, horizon = ctx.currentTime + 0.2;
+    while (nextBeat < horizon) {
+      playClick(nextBeat, beatIdx % 4 === 0);
+      uiBeats.push({ time: nextBeat, idx: beatIdx });
+      if (beatIdx < 4) s.countInClicks.push(nextBeat);
+      beatIdx++;
+      nextBeat = s.beat0 + beatIdx * s.beat;
+    }
+    schedTimer = setTimeout(schedule, 25);
+  }
+
+  function onOnset(t, peak, full) {
+    if (onsetSink) { onsetSink(t, peak); return; }
+    if (phase !== 'session' || !session) return;
+    if (session.mode === 'click') onClickHit(t); else onFreeHit(t, peak, full);
+  }
+
+  // live assignment of one hit to the (auto) grid
+  function liveAssign(s, x) {
+    const lc = s.lc;
+    let offset = 0;
+    if (!s.calibrated) {
+      const a = 2 * Math.PI * x / s.g; lc.sin += Math.sin(a); lc.cos += Math.cos(a);
+      offset = Math.atan2(lc.sin, lc.cos) / (2 * Math.PI) * s.g;
+    }
+    const b0 = (x - offset) / s.beat, fr = b0 - Math.round(b0);
+    if (Math.abs(fr) < 0.5 / s.finest) { lc.near.push(fr * s.beat); if (lc.near.length > 41) lc.near.shift(); lc.center = lc.near.length >= 8 ? median(lc.near) : 0; }
+    const b = b0 - lc.center / s.beat;
+    const j = Math.floor(b + 0.5 / s.finest);
+    if (lc.groupJ !== j) { if (lc.lastFeel) lc.prevFeel = lc.lastFeel; lc.groupJ = j; lc.group = []; }
+    lc.group.push({ b, L: s.beat });
+    const asg = assignGrid(lc.group, s.cfg, lc.prevFeel);
+    const a = asg[asg.length - 1];
+    a.dev += lc.center * 1000;
+    lc.lastFeel = a.feel;
+    if (!a.ok || lc.seen.has(a.key)) return null;
+    lc.seen.add(a.key);
+    lc.n++; const d = a.dev - lc.mean; lc.mean += d / lc.n; lc.m2 += d * (a.dev - lc.mean);
+    return a;
+  }
+
+  function onClickHit(t) {
+    const s = session;
+    if (t - s.latency < s.countInEnd - s.g / 2) { s.countInOnsets.push({ t, peak: 0 }); return; }
+    const x = t - s.latency - s.beat0;
+    s.xs.push(x);
+    const a = liveAssign(s, x);
+    if (a) {
+      const shown = a.dev;
+      showDial(signed(shown) + ' ms', s.calibrated ? (shown > 3 ? 'spät' : shown < -3 ? 'früh' : 'genau') : 'zu deinem Mittel', Math.abs(shown));
+      pushChart(shown);
+      TL.append(x - 4 * s.beat, shown);
+    } else {
+      showDial('?', 'zwischen den Rasterpunkten', 999);
+    }
+    const lc = s.lc;
+    $('st1').textContent = lc.n;
+    $('st2').textContent = s.calibrated && lc.n ? signed(lc.mean) + ' ms' : '–';
+    $('st3').textContent = lc.n >= 2 ? '±' + r0(Math.sqrt(lc.m2 / (lc.n - 1))) + ' ms' : '–';
+  }
+
+  function onFreeHit(t, peak, full) {
+    const s = session;
+    const tr = t - s.t0;
+    const strength = full || peak;
+    if (s.fts.length && tr - s.fts[s.fts.length - 1] > 4) {
+      // pause: next song or section – start the live tempo and "seit Start" afresh
+      s.secStart = tr; s.startTempo = null; s.livePrev = null; s.liveHist = []; s.lastLive = -1;
+      if (!s.target) TL.closeRef(s.fts[s.fts.length - 1]);
+    }
+    s.fOn.push({ t: tr, peak, strength });
+    s.fts.push(tr); s.fpk.push(strength);
+    s.onsets++;
+    $('st1').textContent = s.onsets;
+    pulseDial();
+    if (tr - s.lastLive < 0.3) return;
+    s.lastLive = tr;
+    const T = liveTempo(s.fts, s.fpk, tr, s.livePrev, s.prior, s.secStart);
+    if (!T) return;
+    s.livePrev = T;
+    s.liveHist.push(T); if (s.liveHist.length > 3) s.liveHist.shift();
+    const Ts = median(s.liveHist);
+    if (s.startTempo === null && tr - (s.secStart || 0) > 10) { s.startTempo = Ts; if (!s.target) TL.addRef(s.secStart || 0, Ts, 'Start'); }
+    const ref = s.target || s.startTempo;
+    showDial(String(r0(Ts)), 'BPM aktuell', ref ? Math.abs(Ts - ref) * 8 : -1);
+    $('st2').textContent = r0(Ts) + ' BPM';
+    $('st3').textContent = s.target ? signed1(Ts - s.target) : s.startTempo !== null ? signed1(Ts - s.startTempo) : '–';
+    pushChart(Ts);
+    TL.append(tr, Ts);
+  }
+
+  function leakCheck(s) {
+    if (s.output !== 'headphones' || s.countInClicks.length < 4) return;
+    const r = computeLatency(s.countInClicks, s.countInOnsets, 0.6);
+    if (r.ok) {
+      const w = $('leakWarn');
+      w.textContent = 'Es sieht so aus, als würde das Mikrofon den Klick mithören – das verfälscht die Messung. Stell „Den Klick hörst du über“ auf „Lautsprecher“ (dann wird er herausgefiltert) oder nutze Kopfhörer.';
+      w.hidden = false;
+    }
+  }
+
+  // ---------- live display ----------
+  function showDial(value, label, absMs) {
+    const d = $('dial');
+    d.classList.remove('good', 'warn', 'bad');
+    if (absMs >= 0) d.classList.add(absMs <= 20 ? 'good' : absMs <= 40 ? 'warn' : 'bad');
+    $('dialValue').textContent = value;
+    $('dialLabel').textContent = label;
+    pulseDial();
+  }
+  function pulseDial() {
+    const d = $('dial');
+    d.classList.add('pulse');
+    clearTimeout(pulseTimer);
+    pulseTimer = setTimeout(() => d.classList.remove('pulse'), 90);
+  }
+  function resetLive() {
+    chartVals = []; chartMode = settings.mode;
+    $('dial').classList.remove('good', 'warn', 'bad', 'pulse');
+    $('dialValue').textContent = '–';
+    $('dialLabel').textContent = 'noch keine Schläge';
+    $('st1').textContent = '0'; $('st2').textContent = '–'; $('st3').textContent = '–';
+    drawChart();
+  }
+  function lightBeat(i) { const dots = $('beats').children; for (let j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === i); }
+  function dbPct(v) { if (!(v > 0)) return 0; return Math.min(100, Math.max(0, (20 * Math.log10(v) + 66) / 66 * 100)); }
+  function renderMeter(v, thr) {
+    $('meterFill').style.width = dbPct(v) + '%';
+    const m = $('meterMark');
+    if (thr) { m.hidden = false; m.style.left = 'calc(' + dbPct(thr) + '% - 1px)'; } else m.hidden = true;
+  }
+  function startRaf() { if (!rafId) rafId = requestAnimationFrame(frame); }
+  function frame() {
+    rafId = requestAnimationFrame(frame);
+    if (!ctx || !detector) return;
+    meterValue = Math.max(detector.readPeak(), meterValue * 0.88);
+    renderMeter(meterValue, detector.threshold);
+    const now = ctx.currentTime - (ctx.outputLatency || 0);
+    while (uiBeats.length && uiBeats[0].time <= now) lightBeat(uiBeats.shift().idx % 4);
+    const s = session;
+    if (phase === 'session' && s) {
+      if (s.mode === 'click' && s.countInEnd) {
+        const txt = ctx.currentTime < s.countInEnd ? 'Einzählen …' : 'Läuft – spiel zum Klick.';
+        if (statusText !== txt) setStatus(txt);
+        if (!s.leakChecked && ctx.currentTime > s.countInEnd + 0.7) { s.leakChecked = true; leakCheck(s); }
+        TL.setNow(Math.max(0, ctx.currentTime - s.countInEnd));
+      } else if (s.mode === 'free') {
+        TL.setNow(ctx.currentTime - s.t0);
+      }
+    }
+  }
+
+  // ---------- short live strip ----------
+  function pushChart(v) { chartVals.push(v); if (chartVals.length > 60) chartVals.shift(); drawChart(); }
+  function drawChart() {
+    const cv = $('chart');
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(cv.clientWidth * dpr)), h = Math.max(1, Math.round(cv.clientHeight * dpr));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const pad = 6 * dpr;
+    if (chartMode === 'click') {
+      const mid = h / 2, range = 80, scale = (h / 2 - pad) / range;
+      g.fillStyle = cssVar('--band');
+      g.fillRect(0, mid - 20 * scale, w, 40 * scale);
+      g.fillStyle = cssVar('--line');
+      g.fillRect(0, Math.round(mid) - dpr / 2, w, dpr);
+      const slot = w / 60, bw = Math.max(1, slot - 2 * dpr);
+      const cols = { good: cssVar('--good'), warn: cssVar('--warn'), bad: cssVar('--bad') };
+      chartVals.forEach((v, i) => {
+        const c = Math.max(-range, Math.min(range, v));
+        const x = w - (chartVals.length - i) * slot + dpr;
+        const a = Math.abs(v);
+        g.fillStyle = a <= 20 ? cols.good : a <= 40 ? cols.warn : cols.bad;
+        const bh = Math.max(dpr * 2, Math.abs(c) * scale);
+        g.fillRect(x, c >= 0 ? mid : mid - bh, bw, bh);
+      });
+      g.fillStyle = cssVar('--muted');
+      g.font = `${11 * dpr}px system-ui, sans-serif`;
+      g.fillText('spät', 4 * dpr, h - 4 * dpr);
+      g.fillText('früh', 4 * dpr, 12 * dpr);
+    } else {
+      if (chartVals.length < 2) return;
+      let lo = Math.min.apply(null, chartVals), hi = Math.max.apply(null, chartVals);
+      const m = median(chartVals);
+      lo = Math.min(lo, m - 4); hi = Math.max(hi, m + 4);
+      const pt = 17 * dpr, pb = 17 * dpr;
+      const y = (v) => h - pb - (v - lo) / (hi - lo) * (h - pt - pb);
+      g.strokeStyle = cssVar('--line'); g.lineWidth = dpr; g.setLineDash([4 * dpr, 4 * dpr]);
+      g.beginPath(); g.moveTo(0, y(m)); g.lineTo(w, y(m)); g.stroke(); g.setLineDash([]);
+      g.strokeStyle = cssVar('--accent'); g.lineWidth = 2 * dpr; g.beginPath();
+      chartVals.forEach((v, i) => { const x = i / (chartVals.length - 1) * (w - 2 * pad) + pad; if (i) g.lineTo(x, y(v)); else g.moveTo(x, y(v)); });
+      g.stroke();
+      g.fillStyle = cssVar('--muted'); g.font = `${11 * dpr}px system-ui, sans-serif`;
+      g.fillText(r0(hi) + ' BPM', 4 * dpr, 12 * dpr);
+      g.fillText(r0(lo) + ' BPM', 4 * dpr, h - 4 * dpr);
+    }
+  }
+
+  // ---------- long timeline (scroll + zoom) ----------
+  const TL = (function () {
+    const main = $('tlMain'), mini = $('tlMini');
+    const GL = 36, GR = 6, GT = 8, GB = 20;
+    const st = { kind: 'dev', ts: [], vs: [], cs: [0], cs2: [0], refs: [], refLabel: '', showBias: false, relative: false,
+      now: 0, live: false, follow: true, view: { start: 0, span: 30 }, wantSpan: 30, yMax: 60, yR: 8, lo: 100, hi: 140, raf: 0, lastDraw: 0, smoothMin: null, smoothMax: null };
+    const ptrs = new Map(); let panX0 = 0, panStart0 = 0, pinch = null, moved = false;
+
+    function duration() { const last = st.ts.length ? st.ts[st.ts.length - 1] : 0; return Math.max(last, st.now, 1); }
+    function plotW() { return Math.max(10, main.clientWidth - GL - GR); }
+    function clampView() {
+      const dur = duration();
+      st.view.span = Math.min(Math.max(st.view.span, 4), Math.max(10, dur * 1.02));
+      st.view.start = Math.min(Math.max(st.view.start, 0), Math.max(0, dur - st.view.span * 0.98));
+    }
+    function rebuildPrefix() {
+      st.cs = [0]; st.cs2 = [0];
+      for (const v of st.vs) { st.cs.push(st.cs[st.cs.length - 1] + v); st.cs2.push(st.cs2[st.cs2.length - 1] + v * v); }
+    }
+    function computeRanges() {
+      if (st.kind === 'dev') {
+        const a = st.vs.map(Math.abs).sort((x, y) => x - y);
+        const p90 = a.length ? a[Math.floor(a.length * 0.9)] : 0;
+        st.yMax = p90 > 45 ? 100 : 60;
+      } else {
+        const d = st.vs.map((v, i) => Math.abs(v - refAt(st.ts[i]))).sort((x, y) => x - y);
+        const p98 = d.length ? d[Math.floor(d.length * 0.98)] : 0;
+        st.yR = Math.max(8, Math.min(40, p98 * 1.15));
+        const rv = st.refs.length ? st.refs.map(r => r.v) : [refAt(0)];
+        st.lo = Math.min.apply(null, rv) - st.yR; st.hi = Math.max.apply(null, rv) + st.yR;
+      }
+    }
+    // reference tempo (start or target) valid at time t; several songs get one each
+    function refAt(t) {
+      if (!st.refs.length) return st.vs.length ? median(st.vs.slice(0, Math.min(st.vs.length, 40))) : 120;
+      let best = st.refs[0], bd = Infinity;
+      for (const r of st.refs) { const d = t < r.a ? r.a - t : t > r.b ? t - r.b : 0; if (d < bd) { bd = d; best = r; } }
+      return best.v;
+    }
+    function requestDraw() { if (!st.raf) st.raf = requestAnimationFrame(() => { st.raf = 0; draw(); }); }
+    function yMapper(H) {
+      const y0 = GT, y1 = H - GB, ph = y1 - y0;
+      if (st.kind === 'dev') { const Y = st.yMax; return v => y0 + (Math.max(-Y, Math.min(Y, v)) + Y) / (2 * Y) * ph; }
+      let lo, hi;
+      if (!st.refs.length) { const c = refAt(0); lo = c - st.yR; hi = c + st.yR; }
+      else { lo = st.lo; hi = st.hi; }
+      if (st.live) {
+        const a = st.view.start, b = a + st.view.span;
+        const vis = st.refs.filter(r => r.b >= a && r.a <= b);
+        if (vis.length) { lo = Math.min.apply(null, vis.map(r => r.v)) - st.yR; hi = Math.max.apply(null, vis.map(r => r.v)) + st.yR; }
+        const i0 = lowerBound(st.ts, a), i1 = lowerBound(st.ts, b);
+        for (let i = i0; i < i1; i++) { if (st.vs[i] < lo + 1) lo = st.vs[i] - 1; if (st.vs[i] > hi - 1) hi = st.vs[i] + 1; }
+      }
+      return v => y0 + (1 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * ph;
+    }
+    function smoothAt(t, W) {
+      const i = lowerBound(st.ts, t);
+      const near = Math.min(i < st.ts.length ? st.ts[i] - t : Infinity, i > 0 ? t - st.ts[i - 1] : Infinity);
+      if (near > Math.max(2, W / 2)) return null;               // no line across pauses
+      const a = lowerBound(st.ts, t - W / 2), b = lowerBound(st.ts, t + W / 2), n = b - a;
+      if (n < 3 || st.ts[b - 1] - st.ts[a] < 0.45 * W) return null;
+      return (st.cs[b] - st.cs[a]) / n;
+    }
+    function draw() {
+      st.lastDraw = performance.now();
+      const dpr = window.devicePixelRatio || 1, W = main.clientWidth, H = main.clientHeight;
+      if (!W || !H) return;
+      if (main.width !== Math.round(W * dpr) || main.height !== Math.round(H * dpr)) { main.width = Math.round(W * dpr); main.height = Math.round(H * dpr); }
+      const g = main.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      if (st.follow && st.live) { st.view.span = Math.min(st.wantSpan, Math.max(10, duration() * 1.02)); st.view.start = Math.max(0, duration() - st.view.span); }
+      clampView();
+      const { start, span } = st.view, pw = plotW(), x0 = GL, y0 = GT, y1 = H - GB;
+      const tx = (t) => x0 + (t - start) / span * pw;
+      const yOf = yMapper(H);
+      const col = { good: cssVar('--good'), warn: cssVar('--warn'), bad: cssVar('--bad'), line: cssVar('--line'), muted: cssVar('--muted'), accent: cssVar('--accent'), band: cssVar('--band'), text: cssVar('--text') };
+      g.font = '10.5px system-ui, sans-serif';
+      // hint labels first, so data is drawn on top of them
+      g.fillStyle = col.muted; g.textAlign = 'right';
+      g.fillText(st.kind === 'dev' ? 'früh' : 'schneller', x0 + pw - 4, y0 + 11);
+      g.fillText(st.kind === 'dev' ? 'spät' : 'langsamer', x0 + pw - 4, y1 - 4);
+      g.textAlign = 'left';
+      // horizontal guide lines
+      const guideSet = (center, labelled, xa, xb) => {
+        const list = [];
+        if (st.kind === 'dev') {
+          list.push([0, 'solid', '0']);
+          [10, 20, 40].concat(st.yMax >= 100 ? [80] : []).forEach(v => { const sty = v === 10 ? 'dot' : 'dash'; list.push([v, sty, '+' + v], [-v, sty, '−' + v]); });
+        } else {
+          list.push([center, 'solid', String(r0(center))]);
+          [2, 5].concat(st.yR > 10 ? [10] : []).concat(st.yR > 20 ? [20] : []).forEach(v => { const sty = v === 2 ? 'dot' : 'dash'; list.push([center + v, sty, '+' + v], [center - v, sty, '−' + v]); });
+        }
+        const used = [];
+        list.forEach(([v, sty, lab]) => {
+          const yr = yOf(v), y = Math.round(yr) + 0.5;
+          if (y < y0 - 1 || y > y1 + 1) return;
+          g.strokeStyle = sty === 'solid' ? col.muted : col.line; g.lineWidth = 1;
+          g.setLineDash(sty === 'dot' ? [2, 3] : sty === 'dash' ? [6, 4] : []);
+          g.beginPath(); g.moveTo(xa, y); g.lineTo(xb, y); g.stroke();
+          if (labelled && used.every(ly => Math.abs(ly - yr) >= 10.5)) { g.fillStyle = col.muted; g.textAlign = 'right'; g.fillText(lab, x0 - 4, y + 3.5); used.push(yr); }
+        });
+        g.setLineDash([]); g.textAlign = 'left';
+      };
+      if (st.kind === 'dev') {
+        g.fillStyle = col.band; g.fillRect(x0, yOf(-20), pw, yOf(20) - yOf(-20));
+        guideSet(0, true, x0, x0 + pw);
+      } else if (!st.refs.length) {
+        guideSet(refAt(0), true, x0, x0 + pw);
+      } else {
+        const vis = st.refs.filter(r => r.b >= start && r.a <= start + span);
+        const labelRef = vis.find(r => r.a <= start && r.b >= start) || vis[0];
+        vis.forEach(r => {
+          const xa = st.refs.length === 1 ? x0 : Math.max(x0, tx(r.a)), xb = st.refs.length === 1 ? x0 + pw : Math.min(x0 + pw, tx(r.b));
+          guideSet(r.v, r === labelRef, xa, xb);
+          if (r !== labelRef) { g.fillStyle = col.muted; g.fillText(String(r0(r.v)), xa + 3, yOf(r.v) - 4); }
+        });
+      }
+      // time axis
+      const steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800];
+      const step = steps.find(sp => pw / (span / sp) >= 60) || 1800;
+      g.textAlign = 'center';
+      for (let tt = Math.ceil(start / step) * step; tt <= start + span + 1e-6; tt += step) {
+        const x = Math.round(tx(tt)) + 0.5;
+        g.strokeStyle = col.line; g.globalAlpha = 0.5; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); g.globalAlpha = 1;
+        g.fillStyle = col.muted; g.fillText(mmss(tt), x, H - 5);
+      }
+      g.textAlign = 'left';
+      // data
+      g.save(); g.beginPath(); g.rect(x0, y0 - 2, pw, y1 - y0 + 4); g.clip();
+      const i0 = lowerBound(st.ts, start - span * 0.02), i1 = lowerBound(st.ts, start + span * 1.02), cnt = i1 - i0;
+      const colorOf = (a) => a <= 20 ? col.good : a <= 40 ? col.warn : col.bad;
+      if (st.kind === 'dev') {
+        const zero = yOf(0);
+        if (cnt <= pw / 1.5) {
+          const bw = Math.max(1.5, Math.min(6, pw / Math.max(1, cnt) * 0.6));
+          for (let i = i0; i < i1; i++) { const v = st.vs[i], x = tx(st.ts[i]), y = yOf(v); g.fillStyle = colorOf(Math.abs(v)); g.fillRect(x - bw / 2, Math.min(zero, y), bw, Math.max(1.5, Math.abs(y - zero))); }
+        } else {
+          const B = 2, nb = Math.ceil(pw / B) + 1, mn = new Float64Array(nb).fill(Infinity), mx = new Float64Array(nb).fill(-Infinity), sa = new Float64Array(nb), nn = new Uint32Array(nb);
+          for (let i = i0; i < i1; i++) { const k = Math.floor((tx(st.ts[i]) - x0) / B); if (k < 0 || k >= nb) continue; const v = st.vs[i]; if (v < mn[k]) mn[k] = v; if (v > mx[k]) mx[k] = v; sa[k] += Math.abs(v); nn[k]++; }
+          g.globalAlpha = 0.75;
+          for (let k = 0; k < nb; k++) {
+            if (!nn[k]) continue;
+            const ya = yOf(Math.min(0, mn[k])), yb = yOf(Math.max(0, mx[k]));
+            g.fillStyle = colorOf(sa[k] / nn[k]);
+            g.fillRect(x0 + k * B, Math.min(ya, yb), B - 0.5, Math.max(1.5, Math.abs(yb - ya)));
+          }
+          g.globalAlpha = 1;
+        }
+      } else if (cnt <= pw) {
+        g.fillStyle = col.muted; g.globalAlpha = 0.55;
+        for (let i = i0; i < i1; i++) { g.beginPath(); g.arc(tx(st.ts[i]), yOf(st.vs[i]), 1.6, 0, 6.2832); g.fill(); }
+        g.globalAlpha = 1;
+      }
+      // smoothed line (drift / tempo)
+      const Ws = st.kind === 'dev' ? Math.min(30, Math.max(1.5, span / 30)) : Math.min(20, Math.max(4, span / 40));
+      g.strokeStyle = col.accent; g.lineWidth = 2.5; g.lineJoin = 'round'; g.beginPath();
+      let pen = false, smin = Infinity, smax = -Infinity;
+      for (let px = 0; px <= pw; px += 2) {
+        const t = start + px / pw * span, m = smoothAt(t, Ws);
+        if (m === null) { pen = false; continue; }
+        if (m < smin) smin = m; if (m > smax) smax = m;
+        const y = yOf(m);
+        if (pen) g.lineTo(x0 + px, y); else { g.moveTo(x0 + px, y); pen = true; }
+      }
+      g.stroke();
+      g.restore();
+      st.smoothMin = smin < Infinity ? smin : null; st.smoothMax = smax > -Infinity ? smax : null;
+      drawMini();
+      updateStats();
+      updateButtons();
+    }
+    function drawMini() {
+      const dpr = window.devicePixelRatio || 1, W = mini.clientWidth, H = mini.clientHeight;
+      if (!W || !H) return;
+      if (mini.width !== Math.round(W * dpr) || mini.height !== Math.round(H * dpr)) { mini.width = Math.round(W * dpr); mini.height = Math.round(H * dpr); }
+      const g = mini.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      const dur = duration(), Ws = Math.max(4, dur / 40);
+      let yOf;
+      if (st.kind === 'dev') yOf = v => 3 + (Math.max(-40, Math.min(40, v)) + 40) / 80 * (H - 6);
+      else { const lo = st.lo, hi = st.hi; yOf = v => 3 + (1 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * (H - 6); }
+      g.strokeStyle = cssVar('--line'); g.lineWidth = 1;
+      if (st.kind === 'dev' || !st.refs.length) { const yc = yOf(st.kind === 'dev' ? 0 : refAt(0)); g.beginPath(); g.moveTo(0, yc); g.lineTo(W, yc); g.stroke(); }
+      else st.refs.forEach(r => { const yc = yOf(r.v), xa = st.refs.length === 1 ? 0 : r.a / dur * W, xb = st.refs.length === 1 ? W : r.b / dur * W; g.beginPath(); g.moveTo(xa, yc); g.lineTo(xb, yc); g.stroke(); });
+      g.strokeStyle = cssVar('--accent'); g.lineWidth = 1.5; g.beginPath();
+      let pen = false;
+      for (let px = 0; px <= W; px += 2) { const m = smoothAt(px / W * dur, Ws); if (m === null) { pen = false; continue; } const y = yOf(m); if (pen) g.lineTo(px, y); else { g.moveTo(px, y); pen = true; } }
+      g.stroke();
+      const vx = st.view.start / dur * W, vw = Math.max(4, st.view.span / dur * W);
+      g.fillStyle = cssVar('--accent'); g.globalAlpha = 0.14; g.fillRect(vx, 0, vw, H); g.globalAlpha = 1;
+      g.strokeStyle = cssVar('--accent'); g.lineWidth = 1.5; g.strokeRect(vx + 0.75, 0.75, vw - 1.5, H - 1.5);
+    }
+    function updateStats() {
+      const a = lowerBound(st.ts, st.view.start), b = lowerBound(st.ts, st.view.start + st.view.span), n = b - a;
+      const range = `${mmss(st.view.start)}–${mmss(Math.min(duration(), st.view.start + st.view.span))}`;
+      let txt = '';
+      if (n >= 3) {
+        const m = (st.cs[b] - st.cs[a]) / n, v = Math.max(0, (st.cs2[b] - st.cs2[a]) / n - m * m);
+        if (st.kind === 'dev') txt = `${range}: ${n} Schläge, ` + (st.showBias ? `Tendenz ${signed(m)} ms, ` : '') + `Streuung ±${r0(Math.sqrt(v))} ms`;
+        else {
+          txt = `${range}: Ø ${f1(m)} BPM`;
+          if (st.smoothMin !== null) txt += ` (${f1(st.smoothMin)}–${f1(st.smoothMax)})`;
+          const inView = st.refs.filter(r => r.b >= st.view.start && r.a <= st.view.start + st.view.span);
+          if (inView.length === 1) txt += `, ${signed1(m - inView[0].v)} zum ${st.refLabel || 'Start'}`;
+        }
+      } else txt = st.ts.length ? `${range}: keine Schläge in diesem Ausschnitt` : 'Noch keine Daten.';
+      $('tlStats').textContent = txt;
+    }
+    function updateButtons() {
+      $('tlLive').hidden = !st.live;
+      $('tlLive').classList.toggle('on', st.live && st.follow);
+    }
+    function zoom(f, tCenter) {
+      const c = tCenter != null ? tCenter : st.view.start + st.view.span / 2;
+      st.view.span *= f; st.view.start = c - st.view.span / 2; st.follow = false; clampView();
+      if (st.live) st.wantSpan = st.view.span;
+      requestDraw();
+    }
+    // gestures on the main chart: one finger pans, two fingers zoom
+    main.addEventListener('pointerdown', (e) => {
+      ptrs.set(e.pointerId, e.clientX); moved = false;
+      try { main.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      if (ptrs.size === 1) { panX0 = e.clientX; panStart0 = st.view.start; pinch = null; }
+      else if (ptrs.size === 2) {
+        const [a, b] = [...ptrs.values()], rect = main.getBoundingClientRect(), xm = (a + b) / 2 - rect.left - GL;
+        pinch = { d0: Math.max(24, Math.abs(a - b)), span0: st.view.span, xm, tm: st.view.start + xm / plotW() * st.view.span };
+      }
+    });
+    main.addEventListener('pointermove', (e) => {
+      if (!ptrs.has(e.pointerId)) return;
+      ptrs.set(e.pointerId, e.clientX);
+      if (ptrs.size === 1 && !pinch) {
+        if (!moved && Math.abs(e.clientX - panX0) < 4) return;
+        moved = true; st.follow = false;
+        st.view.start = panStart0 - (e.clientX - panX0) / plotW() * st.view.span;
+      } else if (ptrs.size >= 2 && pinch) {
+        const [a, b] = [...ptrs.values()];
+        st.follow = false;
+        st.view.span = pinch.span0 * pinch.d0 / Math.max(24, Math.abs(a - b));
+        clampView();
+        if (st.live) st.wantSpan = st.view.span;
+        st.view.start = pinch.tm - pinch.xm / plotW() * st.view.span;
+      }
+      clampView(); requestDraw();
+    });
+    const endPtr = (e) => {
+      ptrs.delete(e.pointerId);
+      if (ptrs.size === 1) { panX0 = [...ptrs.values()][0]; panStart0 = st.view.start; pinch = null; moved = true; }
+      if (!ptrs.size) pinch = null;
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => main.addEventListener(ev, endPtr));
+    main.addEventListener('wheel', (e) => { e.preventDefault(); const rect = main.getBoundingClientRect(); zoom(Math.exp(e.deltaY * 0.002), st.view.start + (e.clientX - rect.left - GL) / plotW() * st.view.span); }, { passive: false });
+    // overview strip: tap or drag to jump
+    const miniJump = (e) => { const rect = mini.getBoundingClientRect(); st.follow = false; st.view.start = (e.clientX - rect.left) / rect.width * duration() - st.view.span / 2; clampView(); requestDraw(); };
+    let miniDown = false;
+    mini.addEventListener('pointerdown', (e) => { miniDown = true; try { mini.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } miniJump(e); });
+    mini.addEventListener('pointermove', (e) => { if (miniDown) miniJump(e); });
+    ['pointerup', 'pointercancel'].forEach(ev => mini.addEventListener(ev, () => { miniDown = false; }));
+    $('tlIn').addEventListener('click', () => zoom(0.5));
+    $('tlOut').addEventListener('click', () => zoom(2));
+    $('tlFit').addEventListener('click', () => { st.follow = false; st.view.start = 0; st.view.span = duration(); clampView(); requestDraw(); });
+    $('tlLive').addEventListener('click', () => { st.follow = true; requestDraw(); });
+    window.addEventListener('resize', requestDraw);
+
+    return {
+      reset(kind, o) {
+        o = o || {};
+        Object.assign(st, { kind, ts: [], vs: [], refs: o.ref != null ? [{ a: 0, b: 1e9, v: o.ref }] : [], refLabel: o.refLabel || '', showBias: !!o.showBias, relative: !!o.relative, now: 0, live: true, follow: true });
+        st.view = { start: 0, span: kind === 'dev' ? 30 : 60 }; st.wantSpan = st.view.span;
+        rebuildPrefix(); computeRanges();
+        $('tlHelp').textContent = kind === 'dev'
+          ? 'Jeder Balken ist ein Schlag, die Linie der gleitende Durchschnitt. Wischen verschiebt, zwei Finger zoomen.'
+          : 'Die Linie zeigt dein Tempo. Waagrechte Linien: ±2 und ±5 BPM um ' + (o.ref != null ? 'das Zieltempo' : 'dein Starttempo') + '. Wischen verschiebt, zwei Finger zoomen.';
+        requestDraw();
+      },
+      append(t, v) {
+        st.ts.push(t); st.vs.push(v);
+        st.cs.push(st.cs[st.cs.length - 1] + v); st.cs2.push(st.cs2[st.cs2.length - 1] + v * v);
+        if (st.ts.length % 25 === 0) computeRanges();
+        if (performance.now() - st.lastDraw > 120) requestDraw();
+      },
+      setNow(t) { st.now = t; if (st.follow && performance.now() - st.lastDraw > 150) requestDraw(); },
+      closeRef(t) { const last = st.refs[st.refs.length - 1]; if (last && last.b > t) { last.b = Math.max(last.a, t); requestDraw(); } },
+      addRef(a, v, label) {
+        const last = st.refs[st.refs.length - 1];
+        if (last) last.b = Math.max(last.a, a - 0.01);
+        st.refs.push({ a, b: 1e9, v }); if (label) st.refLabel = label;
+        computeRanges(); requestDraw();
+      },
+      setSeries(kind, ts, vs, o) {
+        o = o || {};
+        Object.assign(st, { kind, ts: ts.slice(), vs: vs.slice(), refs: o.refs || [], refLabel: o.refLabel || '', showBias: !!o.showBias, relative: !!o.relative, live: false, follow: false });
+        if (o.now != null) st.now = o.now;
+        rebuildPrefix(); computeRanges();
+        $('tlHelp').textContent = kind === 'dev'
+          ? (o.relative ? 'Abweichung jedes Schlags von deinem eigenen Puls. ' : 'Jeder Balken ist ein Schlag, die Linie der gleitende Durchschnitt – so siehst du Drift. ') + 'Wischen verschiebt, zwei Finger zoomen, oben tippen springt.'
+          : 'Die Linie zeigt dein Tempo über die ganze Aufnahme. Waagrechte Linien: ±2 und ±5 BPM um ' + (o.refLabel === 'Zieltempo' ? 'das Zieltempo' : (o.refs && o.refs.length > 1 ? 'das Starttempo jedes Abschnitts' : 'dein Starttempo')) + '. Wischen verschiebt, zwei Finger zoomen, oben tippen springt.';
+        if (o.keepView) { clampView(); } else { st.view = { start: 0, span: duration() }; clampView(); }
+        requestDraw();
+      },
+      focus(t, span) { st.follow = false; st.view.span = span || 60; st.view.start = t - st.view.span / 2; clampView(); requestDraw(); },
+      draw: requestDraw
+    };
+  })();
+
+  // ---------- summary ----------
+  function addRow(dl, label, value, jumpT) {
+    const row = document.createElement('div'); row.className = 'row';
+    const dt = document.createElement('dt'); dt.textContent = label;
+    const dd = document.createElement('dd'); dd.className = 'num'; dd.textContent = value;
+    if (jumpT != null) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'link'; b.textContent = 'zeigen';
+      b.addEventListener('click', () => { TL.focus(jumpT, 60); try { $('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ } });
+      dd.append(b);
+    }
+    row.append(dt, dd); dl.append(row);
+  }
+  function addNote(text) { const p = document.createElement('p'); p.className = 'sum-note'; p.textContent = text; $('summaryNotes').append(p); }
+  function clearSummary() {
+    $('summaryList').textContent = ''; $('summaryNotes').textContent = '';
+    $('heatGrids').textContent = ''; $('heatBox').hidden = true; $('distBox').hidden = true; $('octaveRow').hidden = true; $('heatMode').hidden = true;
+    lastDist = null; lastHeat = null;
+  }
+
+  function syllable(n, p, beatLabel) {
+    if (p === 0) return beatLabel;
+    if (n === 2) return '+';
+    if (n === 4) return ['', 'e', '+', 'e'][p];
+    if (n === 8) return ['', '·', 'e', '·', '+', '·', 'e', '·'][p];
+    if (n === 3) return ['', '⅓', '⅔'][p];
+    if (n === 6) return ['', '⅙', '⅓', '½', '⅔', '⅚'][p];
+    return String(p);
+  }
+  function heatCell(c, sy, shift) {
+    const el = document.createElement('div');
+    const ok = c && c.n >= 4, m = ok ? c.s / c.n - (shift || 0) : 0;
+    el.className = 'hc ' + (!ok ? 'none' : Math.abs(m) <= 5 ? 'good' : Math.abs(m) <= 12 ? 'warn' : 'bad');
+    const a = document.createElement('span'); a.className = 'sy'; a.textContent = sy;
+    const b = document.createElement('span'); b.className = 'v num'; b.textContent = ok ? signed(m) : '–';
+    el.title = ok ? `${c.n} Schläge` : 'zu wenige Schläge';
+    el.append(a, b);
+    return el;
+  }
+  // bars: number of rows (4 for click mode, 1 for free mode)
+  let lastHeat = null;
+  function renderHeat(heat, cfg, bars, shift) {
+    lastHeat = { heat, cfg, bars, shift: shift || 0 };
+    const box = $('heatGrids'); box.textContent = '';
+    const grids = [];
+    if (cfg.nb) grids.push({ letter: 'B', n: cfg.nb, from: 0, title: null });
+    if (cfg.nt) {
+      let tern = 0; Object.keys(heat).forEach(k => { if (k[0] === 'T') tern += heat[k].n; });
+      if (!cfg.nb) grids.push({ letter: 'T', n: cfg.nt, from: 0, title: null });
+      else if (tern >= 8) grids.push({ letter: 'T', n: cfg.nt, from: 1, title: 'Triolen' });
+    }
+    let shown = 0;
+    grids.forEach(gr => {
+      if (gr.title) { const h = document.createElement('p'); h.className = 'help'; h.textContent = gr.title; box.append(h); }
+      const cols = gr.n - gr.from;
+      const grid = document.createElement('div'); grid.className = 'heat';
+      grid.style.gridTemplateColumns = (bars > 1 ? '22px ' : '') + `repeat(${cols}, minmax(0, 1fr))`;
+      for (let bar = 0; bar < bars; bar++) {
+        if (bars > 1) { const lab = document.createElement('span'); lab.className = 'hl'; lab.textContent = String(bar + 1); grid.append(lab); }
+        for (let p = gr.from; p < gr.n; p++) {
+          const key = p === 0 ? 'D:' + bar : gr.letter + gr.n + ':' + bar + ':' + p;
+          const c = heat[key]; if (c && c.n >= 4) shown++;
+          grid.append(heatCell(c, syllable(gr.n, p, bars > 1 ? String(bar + 1) : '♩'), shift));
+        }
+      }
+      box.append(grid);
+    });
+    return shown;
+  }
+  let lastDist = null;
+  function renderDist(hist, meanDev, within10, within, relTo) {
+    lastDist = { hist, meanDev };
+    $('distBox').hidden = false;
+    $('distCaption').textContent = `${r0(within10 * 100)}\u00a0% der Schläge liegen innerhalb ±10\u00a0ms, ${r0(within * 100)}\u00a0% innerhalb ±20\u00a0ms` +
+      (relTo ? ` – gemessen an ${relTo}.` : '.') + (meanDev != null ? ' Gestrichelt: dein Durchschnitt.' : '');
+    requestAnimationFrame(drawDist);
+  }
+  function drawDist() {
+    if (!lastDist || $('distBox').hidden) return;
+    const { hist, meanDev } = lastDist;
+    const cv = $('distCanvas');
+    const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+    if (!W || !H) return;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    const pad = 10, bot = 18, n = hist.counts.length, bw = (W - 2 * pad) / n;
+    const mx = Math.max(1, Math.max.apply(null, hist.counts));
+    const xOf = (ms) => pad + (ms + hist.rangeMs) / (2 * hist.rangeMs) * (W - 2 * pad);
+    g.fillStyle = cssVar('--band'); g.fillRect(xOf(-20), 4, xOf(20) - xOf(-20), H - bot - 4);
+    hist.counts.forEach((c, i) => {
+      const center = -hist.rangeMs + (i + 0.5) * hist.binMs, a = Math.abs(center);
+      g.fillStyle = a <= 20 ? cssVar('--good') : a <= 40 ? cssVar('--warn') : cssVar('--bad');
+      const h = c / mx * (H - bot - 10);
+      g.fillRect(pad + i * bw + 1, H - bot - h, Math.max(1, bw - 2), h);
+    });
+    g.strokeStyle = cssVar('--muted'); g.lineWidth = 1; g.beginPath(); g.moveTo(xOf(0) + 0.5, 4); g.lineTo(xOf(0) + 0.5, H - bot); g.stroke();
+    if (meanDev != null) { const xm = xOf(Math.max(-hist.rangeMs, Math.min(hist.rangeMs, meanDev))); g.strokeStyle = cssVar('--accent'); g.lineWidth = 2; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(xm, 4); g.lineTo(xm, H - bot); g.stroke(); g.setLineDash([]); }
+    g.fillStyle = cssVar('--muted'); g.font = '10.5px system-ui, sans-serif'; g.textAlign = 'center';
+    [-40, -20, 0, 20, 40].forEach(v => g.fillText(v === 0 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v), xOf(v), H - 5));
+    g.textAlign = 'left'; g.fillText('früh', pad, 14); g.textAlign = 'right'; g.fillText('spät', W - pad, 14); g.textAlign = 'left';
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(drawDist));
+
+  function setHeatRef(mode, bias) {
+    if (!lastResult || lastResult.mode !== 'click') return;
+    const a = lastResult.a;
+    if (bias == null) bias = a.bias;
+    document.querySelectorAll('[data-heatref]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.heatref === mode)));
+    $('heatHelp').textContent = mode === 'own'
+      ? `Abweichung je Position im Takt, verglichen mit deinem Schnitt (${signed(bias)} ms zum Klick). So siehst du, welche Noten aus der Reihe fallen. + heißt später, − heißt früher.`
+      : 'Durchschnittliche Abweichung je Position im Takt zum Klick (Zeilen = Zählzeiten 1–4). + heißt spät, − heißt früh. Grau: zu wenige Schläge.';
+    renderHeat(a.heat, a.cfg, 4, mode === 'own' ? bias : 0);
+  }
+  document.querySelectorAll('[data-heatref]').forEach(b => b.addEventListener('click', () => setHeatRef(b.dataset.heatref)));
+
+  function finishSession(s) {
+    clearSummary();
+    const card = $('summary');
+    card.hidden = false;
+    if (s.mode === 'click') {
+      if (!s.beat) { $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; card.hidden = false; return; }
+      const a = analyzeClick3(s.xs, s.beat, s.subMode, s.calibrated, 4);
+      lastResult = { mode: 'click', a, s };
+      TL.setSeries('dev', a.hits.map(h => h.t), a.hits.map(h => h.dev), { showBias: s.calibrated, relative: !s.calibrated });
+      renderClickSummary(s, a);
+    } else {
+      renderFree(s, null);
+    }
+    card.hidden = false;
+    try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+  }
+
+  function renderClickSummary(s, a) {
+    const dl = $('summaryList');
+    if (a.n < 8) { $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; return; }
+    const drift = a.driftTotal;
+    let verdict;
+    if (drift != null && Math.abs(drift) >= 8) verdict = drift < 0 ? 'Du wirst im Verlauf schneller – du eilst.' : 'Du wirst im Verlauf langsamer – du schleppst.';
+    else if (a.bias != null && Math.abs(a.bias) > 10) verdict = `Du spielst im Schnitt ${r0(Math.abs(a.bias))} ms ${a.bias > 0 ? 'hinter' : 'vor'} dem Klick.`;
+    else if (a.spread <= 10) verdict = 'Sehr genau und gleichmäßig.';
+    else if (a.spread <= 20) verdict = `Solide: kein Drift, Streuung ±${r0(a.spread)} ms.`;
+    else verdict = `Kein Drift, aber noch unruhig (±${r0(a.spread)} ms).`;
+    $('verdict').textContent = verdict;
+    const LV = { 1: 'Viertel', 2: 'Achtel', 4: '16tel', 8: '32tel', 3: 'Triolen', 6: 'Sextolen' };
+    let subTxt = SUB_NAMES[s.subMode];
+    if (s.subMode === 0) {
+      const used = (a.levels || []).filter(l => l.L > 1 && l.share >= 0.05 && LV[l.L]).map(l => LV[l.L]);
+      subTxt = 'Auto: ' + (used.length ? used.join(', ') : 'Viertel');
+    }
+    addRow(dl, 'Tempo', `${s.bpm} BPM, ${subTxt}`);
+    addRow(dl, 'Gewertete Schläge', `${a.n} in ${mmss(a.duration)}`);
+    addRow(dl, 'Tendenz', a.bias != null ? `${signed(a.bias)} ms (${Math.abs(a.bias) <= 5 ? 'auf dem Klick' : a.bias > 0 ? 'eher spät' : 'eher früh'})` : 'erst nach Latenz-Messung');
+    addRow(dl, 'Streuung', `±${r0(a.spread)} ms`);
+    if (drift != null) addRow(dl, 'Verlauf', Math.abs(drift) < 8 ? 'kein Drift' : `${signed(drift)} ms über ${mmss(a.duration)} (${drift < 0 ? 'eilt' : 'schleppt'})`);
+    if (a.spread1 != null) addRow(dl, '1. → 2. Hälfte', `±${r0(a.spread1)} → ±${r0(a.spread2)} ms`);
+    const ex = a.extremes;
+    if (ex) {
+      const rel = s.calibrated ? '' : ' (relativ)';
+      if (ex.minMean.v < (a.bias || 0) - 5) addRow(dl, 'Am meisten geeilt' + rel, `bei ${mmss(ex.minMean.t)}: ${signed(ex.minMean.v)} ms`, ex.minMean.t);
+      if (ex.maxMean.v > (a.bias || 0) + 5) addRow(dl, 'Am meisten geschleppt' + rel, `bei ${mmss(ex.maxMean.t)}: ${signed(ex.maxMean.v)} ms`, ex.maxMean.t);
+      if (ex.maxSd.v > a.spread + 3) addRow(dl, 'Am unruhigsten', `bei ${mmss(ex.maxSd.t)}: ±${r0(ex.maxSd.v)} ms`, ex.maxSd.t);
+    }
+    if (a.handA != null) addRow(dl, 'Hände bei R-L-Wechsel', s.calibrated ? `Hand auf der 1: ${signed(a.handA)}, andere: ${signed(a.handB)} ms` : `${r0(Math.abs(a.handA - a.handB))} ms Unterschied`);
+    const total = a.n + a.unmatched + a.extra;
+    if (a.unmatched / total > 0.15) addNote(`${a.unmatched} Schläge lagen zwischen den Rasterpunkten.` + (s.subMode ? ` Passt „Du spielst: ${SUB_NAMES[s.subMode]}“? Mit „Auto“ erkennt die App den Notenwert selbst.` : ''));
+    if (a.extra / total > 0.05) addNote(`${a.extra} Schläge landeten doppelt auf demselben Rasterpunkt (Flams, Prellen oder Nebengeräusche).`);
+    if (!s.calibrated) addNote('Ohne Latenz-Messung stimmen Streuung und Drift, aber nicht, ob du vor oder hinter dem Klick liegst.');
+    // heatmap + distribution
+    $('heatBox').hidden = false;
+    if (s.calibrated) {
+      $('heatMode').hidden = false;
+      setHeatRef(Math.abs(a.bias) > 8 ? 'own' : 'click', a.bias);
+    } else {
+      $('heatMode').hidden = true;
+      $('heatHelp').textContent = 'Die Heatmap braucht einmal die Latenz-Messung – ohne sie könnten die Positionen im Takt verrutscht sein.';
+      $('heatGrids').textContent = '';
+    }
+    renderDist(a.hist, s.calibrated ? a.bias : null, a.within10, a.within, s.calibrated ? null : 'deinem eigenen Mittel');
+    addHistory({ d: s.started, m: 'c', bpm: s.bpm, sub: s.subMode, n: a.n, cal: s.calibrated, bias: a.bias, sp: a.spread, dr: drift, dur: a.duration });
+  }
+
+  function tempoRefs(r, s) {
+    if (s.target) return { refs: [{ a: 0, b: 1e9, v: s.target * (lastScale || 1) }], label: 'Zieltempo' };
+    return { refs: r.segments.map(g => ({ a: g.a, b: g.b, v: g.start })), label: 'Start' };
+  }
+  let lastScale = 1;
+  function renderFree(s, scale, keepHistory) {
+    clearSummary();
+    lastScale = scale || 1;
+    const dl = $('summaryList');
+    const r = analyzeFree3(s.fOn, { target: s.target, scale: lastScale });
+    lastResult = { mode: 'free', r, s };
+    if (!r.tempo.length || r.tempoMedian == null) {
+      $('verdict').textContent = 'Zu wenige gleichmäßige Schläge, um ein Tempo zu erkennen.';
+      TL.setSeries('tempo', [], [], { now: s.fOn.length ? s.fOn[s.fOn.length - 1].t : 0 });
+      return;
+    }
+    const tr = tempoRefs(r, s);
+    TL.setSeries('tempo', r.tempo.map(p => p.t), r.tempo.map(p => p.bpm), { refs: tr.refs, refLabel: tr.label, now: r.duration });
+    $('tlKind').hidden = false; setTlKind('tempo', true);
+    const segs = r.segments;
+    // stable, steadily faster/slower, or swinging back and forth (start and end alone would hide that)
+    const classify = (g) => {
+      const ch = g.end - g.start, lim = Math.max(2, 0.02 * g.tempo), ex = g.extremes;
+      const swing = ex ? ex.maxMean.v - ex.minMean.v : 0;
+      if (ex && swing >= Math.max(3.5, 0.03 * g.tempo) && swing > 1.6 * Math.abs(ch)) return { k: 'swing', ch, lim, lo: ex.minMean.v, hi: ex.maxMean.v };
+      return { k: Math.abs(ch) < lim ? 'stable' : ch > 0 ? 'faster' : 'slower', ch, lim };
+    };
+    if (segs.length === 1) {
+      const g = segs[0], c = classify(g), se = `${r0(g.start)} → ${r0(g.end)} BPM`;
+      $('verdict').textContent = c.k === 'stable' ? `Tempo stabil gehalten: ${se}.`
+        : c.k === 'faster' ? `Du bist im Verlauf schneller geworden: ${se}.`
+        : c.k === 'slower' ? `Du bist im Verlauf langsamer geworden: ${se}.`
+        : `Dein Tempo hat geschwankt: zwischen ${r0(c.lo)} und ${r0(c.hi)} BPM. ` + (Math.abs(c.ch) < c.lim ? `Anfang und Ende lagen gleich (${r0(g.start)} BPM).` : `Insgesamt ${c.ch > 0 ? 'schneller' : 'langsamer'} geworden: ${se}.`);
+      addRow(dl, 'Ø Tempo', `${f1(g.tempo)} BPM`);
+      addRow(dl, 'Anfang → Ende', `${f1(g.start)} → ${f1(g.end)} BPM`);
+    } else {
+      const cls = segs.map(classify), moved = cls.filter(c => c.k !== 'stable').length;
+      $('verdict').textContent = `${segs.length} Abschnitte mit Pausen dazwischen erkannt. ` +
+        (moved ? `In ${moved === 1 ? 'einem davon' : moved + ' davon'} hat sich dein Tempo verändert.` : 'In allen hast du dein Tempo gehalten.');
+      segs.slice(0, 8).forEach((g, i) => addRow(dl, `Abschnitt ${i + 1} (${mmss(g.a)}–${mmss(g.b)})`,
+        `Ø ${f1(g.tempo)} BPM, ${r0(g.start)} → ${r0(g.end)}` + (cls[i].k === 'swing' ? ` (${r0(cls[i].lo)}–${r0(cls[i].hi)})` : ''), (g.a + g.b) / 2));
+    }
+    if (s.target) addRow(dl, 'Zum Zieltempo', `Ø ${signed1(mean(r.tempo.map(p => p.bpm)) - s.target * lastScale)} BPM`);
+    // fastest / slowest 30 s, measured against the tempo of their own section
+    let fast = null, slow = null;
+    segs.forEach((g, i) => {
+      const ex = g.extremes; if (!ex) return;
+      const df = ex.maxMean.v - g.tempo, ds = ex.minMean.v - g.tempo;
+      if (df > 1.5 && (!fast || df > fast.d)) fast = { d: df, t: ex.maxMean.t, v: ex.maxMean.v, i };
+      if (ds < -1.5 && (!slow || ds < slow.d)) slow = { d: ds, t: ex.minMean.t, v: ex.minMean.v, i };
+    });
+    const segTag = (i) => segs.length > 1 ? ` (Abschnitt ${i + 1})` : '';
+    if (fast) addRow(dl, 'Schnellste Stelle', `bei ${mmss(fast.t)}: ${f1(fast.v)} BPM${segTag(fast.i)}`, fast.t);
+    if (slow) addRow(dl, 'Langsamste Stelle', `bei ${mmss(slow.t)}: ${f1(slow.v)} BPM${segTag(slow.i)}`, slow.t);
+    if (r.spread != null) {
+      addRow(dl, 'Timing zum eigenen Puls', `±${r0(r.spread)} ms`);
+      const mex = windowExtremes(r.micro.map(m => m.t), r.micro.map(m => m.dev), 30, 5, 20);
+      if (mex && mex.maxSd.v > r.spread + 3) addRow(dl, 'Am unruhigsten', `bei ${mmss(mex.maxSd.t)}: ±${r0(mex.maxSd.v)} ms`, mex.maxSd.t);
+    }
+    addRow(dl, 'Dauer', mmss(r.duration || 0));
+    $('octaveRow').hidden = false;
+    addNote('Zeigt die App ein halb oder doppelt so schnelles Tempo, als du gespielt hast? Dann korrigiere es mit den Knöpfen oben.' + (s.target ? '' : ' Mit „Zieltempo“ kommt das praktisch nicht vor.'));
+    if (r.micro.length >= 16 && r.hist) {
+      $('heatBox').hidden = false;
+      $('heatHelp').textContent = 'Abweichung je Position innerhalb eines Schlags, gemessen an deinem eigenen Puls. + heißt spät, − heißt früh.';
+      renderHeat(r.heat, r.cfg || gridConfig(60 / r.tempoMedian, 0), 1);
+      renderDist(r.hist, null, r.within10, r.within, 'deinem eigenen Puls');
+    }
+    const entry = { d: s.started, m: 'f', n: r.micro.length, tp: r.tempoMedian, sd: r.spread, st: segs[0].start, en: segs[segs.length - 1].end, dur: r.duration, tg: s.target, sg: segs.length,
+      sgt: segs.slice(0, 6).map(g => Math.round(g.tempo)) };
+    if (keepHistory) replaceLatestHistory(entry); else addHistory(entry);
+  }
+  function setTlKind(kind, onlyButtons) {
+    document.querySelectorAll('[data-tlkind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tlkind === kind)));
+    if (onlyButtons || !lastResult || lastResult.mode !== 'free') return;
+    const r = lastResult.r, s = lastResult.s;
+    if (kind === 'dev') TL.setSeries('dev', r.micro.map(m => m.t), r.micro.map(m => m.dev), { relative: true, keepView: true, now: r.duration });
+    else { const tr = tempoRefs(r, s); TL.setSeries('tempo', r.tempo.map(p => p.t), r.tempo.map(p => p.bpm), { refs: tr.refs, refLabel: tr.label, keepView: true, now: r.duration }); }
+  }
+  document.querySelectorAll('[data-tlkind]').forEach(b => b.addEventListener('click', () => setTlKind(b.dataset.tlkind)));
+  function octave(f) {
+    if (!lastResult || lastResult.mode !== 'free' || !lastResult.r.tempoMedian) return;
+    const sc = lastScale * f, t = lastResult.r.tempoMedian * f;
+    if (sc < 0.24 || sc > 4.1 || t < 25 || t > 400) return;
+    renderFree(lastResult.s, sc, true);
+  }
+  $('octHalf').addEventListener('click', () => octave(0.5));
+  $('octDouble').addEventListener('click', () => octave(2));
+
+  // ---------- history ----------
+  function addHistory(e) { const h = store.get(K_HIST, []) || []; h.unshift(e); store.set(K_HIST, h.slice(0, 60)); renderHistory(); }
+  function replaceLatestHistory(e) { const h = store.get(K_HIST, []) || []; const i = h.findIndex(x => x.m === 'f' && x.d === e.d); if (i >= 0) h[i] = e; else h.unshift(e); store.set(K_HIST, h.slice(0, 60)); renderHistory(); }
+  function renderHistory() {
+    const list = $('histList'); list.textContent = '';
+    const h = store.get(K_HIST, []) || [];
+    $('histClear').hidden = !h.length;
+    $('histClear').textContent = 'Verlauf löschen'; $('histClear').dataset.armed = '';
+    if (!h.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Noch keine Übungen gespeichert.'; list.append(p); return; }
+    h.forEach(e => {
+      const item = document.createElement('div'); item.className = 'hist-item';
+      const d = new Date(e.d);
+      const date = document.createElement('div'); date.className = 'hist-date';
+      date.textContent = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + (e.dur ? ', ' + mmss(e.dur) : '');
+      const line = document.createElement('div');
+      if (e.m === 'c') {
+        let t = `${e.bpm} BPM ${SUB_NAMES[e.sub] || ''}: Streuung ±${r0(e.sp)} ms`;
+        if (e.cal && e.bias != null) t += `, Tendenz ${signed(e.bias)} ms`;
+        if (e.dr != null && Math.abs(e.dr) >= 8) t += e.dr < 0 ? ', eilt' : ', schleppt';
+        line.textContent = t;
+      } else {
+        let t;
+        if (e.sg > 1) t = `Frei: ${e.sg} Abschnitte` + (e.sgt ? ` (${e.sgt.join(' / ')}${e.sg > e.sgt.length ? ' …' : ''} BPM)` : `, Ø ${r0(e.tp)} BPM`);
+        else { t = `Frei: Ø ${r0(e.tp)} BPM`; if (e.st != null) t += ` (${r0(e.st)} → ${r0(e.en)})`; }
+        if (e.sd != null) t += `, Timing ±${r0(e.sd)} ms`;
+        if (e.tg) t += `, Ziel ${e.tg}`;
+        line.textContent = t;
+      }
+      item.append(date, line); list.append(item);
+    });
+  }
+  $('histClear').addEventListener('click', () => {
+    const b = $('histClear');
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen zum Löschen'; return; }
+    store.set(K_HIST, []); renderHistory();
+  });
+
+  // ---------- init ----------
+  saveSettings();
+  renderSetup();
+  renderHistory();
+  resetLive();
+  renderMeter(0, null);
+  precheck();
+})();
+</script>
+</body>
+</html>
