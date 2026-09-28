@@ -1,0 +1,16 @@
+{
+  "name": "Drum Timing Trainer",
+  "short_name": "Drum Timing",
+  "description": "Hört über das Mikrofon mit und zeigt, wie genau und gleichmäßig du spielst.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3efe7",
+  "theme_color": "#f3efe7",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f3efe7">
 <title>Drum Timing Trainer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script>
   // choose light/dark before the first paint, so the page does not flash
   try { var t = (JSON.parse(localStorage.getItem('dtt.settings.v2') || '{}') || {}).theme; if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
@@ -82,16 +85,17 @@ h2 { font-size: 16px; margin: 0 0 8px; }
 .problem details { font-size: 13px; color: var(--muted); }
 .problem pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 6px 0 0; font-family: inherit; }
 
-.field + .field { margin-top: 10px; }
+.field + .field { margin-top: 9px; }
 .field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .seg { display: flex; gap: 3px; padding: 3px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; }
 .seg button { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--muted); padding: 9px 4px; border-radius: 8px; font-size: 14px; font-weight: 600; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
-.seg.small button { font-size: 13px; padding: 9px 2px; }
+.seg.small button { font-size: 12.5px; padding: 9px 2px; white-space: nowrap; }
 
 .tempo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
 .tempo-row .field-label { margin: 0; flex: 1; }
-.round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.round { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.round:active:not(:disabled) { background: var(--accent-soft); }
 .bpm-box { display: flex; align-items: baseline; justify-content: center; gap: 4px; min-width: 96px; }
 .bpm { font-size: 30px; font-weight: 700; line-height: 1.1; }
 .bpm-unit { font-size: 13px; color: var(--muted); }
@@ -130,22 +134,33 @@ canvas#chart { display: block; width: 100%; height: 72px; border-radius: 10px; b
 .hit-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); flex: 0 0 auto; }
 .hit-dot.on { background: var(--accent); border-color: var(--accent); }
 .mic-count { font-size: 13px; font-weight: 600; white-space: nowrap; }
-.mic-head .secondary { margin-left: auto; white-space: nowrap; flex: 0 0 auto; }
+.mic-head .btn { margin-left: auto; flex: 0 0 auto; }
 .mic-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .meter { position: relative; height: 12px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
 .meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--muted); opacity: .6; }
 .meter-mark { position: absolute; top: -1px; bottom: -1px; width: 3px; left: 50%; background: var(--accent); }
-.sens-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 10px 0 0; font-size: 13px; }
+.sens-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 13px; }
+.sens-row .sens-desc { margin-left: auto; }
+input[type="range"]:disabled { opacity: .4; }
 .sens-row label { color: var(--muted); }
 .sens-desc { font-weight: 600; }
 
-.primary { display: block; width: 100%; margin-top: 10px; padding: 15px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 17px; font-weight: 700; }
-.primary.stop { background: var(--bad); color: #fff; }
-.secondary { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-weight: 600; }
-.secondary.inline { width: auto; padding: 8px 14px; font-size: 14px; }
-.secondary.small { width: auto; padding: 6px 12px; font-size: 13.5px; border-radius: 9px; }
-.secondary.on { background: var(--accent); color: var(--on-accent); }
-.text-btn { border: 0; background: none; padding: 6px 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: 13.5px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 8px 16px; border: 1.5px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14.5px; font-weight: 600; line-height: 1.2; text-align: center; white-space: nowrap; }
+.btn:active:not(:disabled) { background: var(--accent-soft); }
+.btn.fill, .btn.on { background: var(--accent); color: var(--on-accent); }
+.btn.danger { border-color: var(--bad); color: var(--bad); }
+.btn.danger:active:not(:disabled) { background: rgba(181,60,50,.1); }
+.btn.danger.fill, .btn.danger.armed { background: var(--bad); color: #fff; }
+.btn.small { min-height: 36px; padding: 5px 12px; font-size: 13.5px; border-radius: 9px; }
+.btn.tiny { min-height: 28px; padding: 2px 10px; font-size: 12.5px; border-radius: 8px; border-width: 1.2px; }
+.btn.block { display: flex; width: 100%; white-space: normal; }
+.btn.big { min-height: 54px; font-size: 17px; font-weight: 700; border-radius: 12px; }
+#startBtn { margin-top: 10px; }
+.select { position: relative; display: block; min-width: 0; }
+.select select { -webkit-appearance: none; appearance: none; width: 100%; min-height: 40px; padding: 6px 24px 6px 9px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; }
+.select::after { content: ""; position: absolute; right: 11px; top: 50%; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.select.sm select { min-height: 34px; padding: 3px 24px 3px 9px; font-size: 13.5px; }
+.select select:disabled { opacity: .45; }
 .note { margin: 10px 2px 0; font-size: 13px; color: var(--muted); }
 .help { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 
@@ -169,11 +184,23 @@ canvas#chart { display: block; width: 100%; height: 72px; border-radius: 10px; b
   canvas#chart { height: 56px; }
   .mic-head { min-height: 30px; }
   .sens-row { margin-top: 6px; }
-  .primary { padding: 13px; margin-top: 8px; }
+  .btn.big { min-height: 48px; }
+  #startBtn { margin-top: 8px; }
   #status { margin-top: 8px; }
 }
 
 #liveSlot { margin-top: 14px; }
+.optrow { display: flex; gap: 8px; }
+.optrow > label { flex: 1 1 0; min-width: 0; }
+.optrow .field-label { margin-bottom: 4px; }
+.popts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 7px; font-size: 13.5px; color: var(--muted); }
+.beats span.g { margin-left: 8px; }
+.beats.silent span { background: transparent; border-style: dashed; }
+.rec-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+.rec-titles { flex: 1; min-width: 0; }
+.rec-name { margin: 0 0 2px; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.rename { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.rename input { flex: 1 1 160px; min-width: 0; min-height: 36px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14.5px; }
 
 /* evaluation */
 .empty-state { text-align: center; padding: 26px 18px; }
@@ -183,10 +210,10 @@ dl { margin: 0; }
 .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .row dt { color: var(--muted); }
 .row dd { margin: 0; text-align: right; font-weight: 600; }
-.row dd .link { border: 0; background: none; padding: 0 0 0 6px; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font: inherit; font-weight: 600; }
+.row dd .btn { margin-left: 8px; vertical-align: middle; }
 .sum-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .btn-row { display: flex; gap: 8px; margin-top: 10px; }
-.btn-row .secondary { flex: 1; padding: 9px; font-size: 14px; }
+.btn-row .btn { flex: 1; }
 .rec-info { margin: 0 0 6px; }
 .tl-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
 .tl-head h2 { margin: 0; }
@@ -194,8 +221,7 @@ dl { margin: 0; }
 canvas.tl-mini { display: block; width: 100%; height: 34px; border-radius: 8px; background: var(--panel-2); margin-bottom: 6px; touch-action: none; }
 canvas.tl-main { display: block; width: 100%; height: 210px; border-radius: 10px; background: var(--panel-2); touch-action: pan-y; }
 .tl-controls { display: flex; gap: 8px; margin-top: 8px; }
-.tl-controls button { flex: 1; padding: 9px 4px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 600; font-size: 14px; }
-.tl-controls button.on { border-color: var(--accent); color: var(--accent); }
+.tl-controls .btn { flex: 1; padding-left: 4px; padding-right: 4px; }
 .tl-stats { margin: 8px 2px 0; font-size: 13.5px; min-height: 19px; }
 .heat { display: grid; gap: 3px; margin-top: 6px; }
 #heatMode { margin: 4px 0 2px; }
@@ -208,7 +234,7 @@ canvas.tl-main { display: block; width: 100%; height: 210px; border-radius: 10px
 .hc.bad { background: rgba(234,122,112,.26); }
 .hc.none .v { color: var(--muted); font-weight: 400; }
 canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; background: var(--panel-2); margin-top: 6px; }
-.rec-actions { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin: 4px 4px 0; }
+.rec-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 0; }
 
 /* history */
 .hist-item { box-sizing: border-box; display: block; width: 100%; padding: 10px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; font-size: 14px; text-align: left; }
@@ -218,7 +244,8 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
 button.hist-item { position: relative; padding-right: 28px; }
 .hist-chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 24px; line-height: 1; }
 .hist-item.active .hist-line { color: var(--accent); font-weight: 600; }
-.hist-tools { display: flex; justify-content: space-between; align-items: center; gap: 4px 16px; flex-wrap: wrap; margin-top: 12px; }
+.hist-tools { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.hist-name { font-weight: 700; }
 #histHelp { margin: 0 0 12px; }
 #histMsg { margin-top: 10px; }
 .empty { color: var(--muted); font-size: 13.5px; margin: 0; }
@@ -290,26 +317,30 @@ button.hist-item { position: relative; padding-right: 28px; }
         <div class="tempo-row">
           <span class="field-label" id="tempoLabel">Tempo</span>
           <button type="button" class="round" id="bpmDown" aria-label="Tempo verringern">−</button>
-          <div class="bpm-box"><output class="bpm num" id="bpmOut">100</output><span class="bpm-unit">BPM</span></div>
+          <div class="bpm-box"><output class="bpm num" id="bpmOut">100</output><span class="bpm-unit" id="bpmUnit">BPM</span></div>
           <button type="button" class="round" id="bpmUp" aria-label="Tempo erhöhen">+</button>
         </div>
         <input type="range" id="bpmRange" min="30" max="300" step="1" value="100" aria-label="Tempo">
       </div>
-      <div class="field" id="subField">
-        <span class="field-label" id="lblSub">Du spielst</span>
-        <div class="seg small" role="group" aria-labelledby="lblSub">
-          <button type="button" data-sub="0">Auto</button>
-          <button type="button" data-sub="1">Viertel</button>
-          <button type="button" data-sub="2">Achtel</button>
-          <button type="button" data-sub="3">Triolen</button>
-          <button type="button" data-sub="4">16tel</button>
-        </div>
+      <div class="field optrow" id="clickOpts">
+        <label><span class="field-label">Takt</span><span class="select"><select id="meterSel"></select></span></label>
+        <label><span class="field-label">Du spielst</span><span class="select"><select id="subSel"></select></span></label>
       </div>
-      <div class="field" id="outputField">
-        <span class="field-label" id="lblOut">Klick über</span>
-        <div class="seg small" role="group" aria-labelledby="lblOut">
-          <button type="button" data-output="headphones">Kopfhörer</button>
-          <button type="button" data-output="speaker">Lautsprecher</button>
+      <div class="field" id="practiceField">
+        <div class="seg small" role="group" aria-label="Übung">
+          <button type="button" data-practice="normal">Normal</button>
+          <button type="button" data-practice="silent">Stille Takte</button>
+          <button type="button" data-practice="stair">Tempo-Treppe</button>
+        </div>
+        <div class="popts" id="silentOpts" hidden>
+          <span>Mit Klick</span><span class="select sm"><select id="silOn" aria-label="Takte mit Klick"></select></span>
+          <span>Takte, ohne</span><span class="select sm"><select id="silOff" aria-label="Takte ohne Klick"></select></span><span>Takte</span>
+        </div>
+        <div class="popts" id="stairOpts" hidden>
+          <span class="select sm"><select id="stStep" aria-label="Schritt"></select></span><span id="stStepUnit">BPM alle</span>
+          <span class="select sm"><select id="stBars" aria-label="Takte pro Durchgang"></select></span><span>Takte, bis</span>
+          <span class="select sm"><select id="stMax" aria-label="Höchsttempo"></select></span>
+          <button type="button" class="btn tiny" id="stCleanBtn" aria-pressed="true">nur wenn sauber</button>
         </div>
       </div>
     </section>
@@ -317,7 +348,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card" id="stage" aria-label="Messung" hidden>
       <p class="runline" id="runLine"></p>
       <p class="status" id="stageStatus" aria-live="polite"></p>
-      <div class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div class="beats" id="beats" aria-hidden="true"></div>
       <div class="dial" id="dial"><div class="dial-value num" id="dialValue">–</div><div class="dial-label" id="dialLabel">noch keine Schläge</div></div>
       <div class="stats">
         <div><span class="stat-v num" id="st1">0</span><span class="stat-l" id="st1l">Schläge</span></div>
@@ -332,15 +363,15 @@ button.hist-item { position: relative; padding-right: 28px; }
         <span class="mic-title">Mikrofonpegel</span>
         <span class="hit-dot" id="hitDot" title="Leuchtet bei jedem erkannten Schlag"></span>
         <span class="mic-count num" id="micCount" aria-live="polite"></span>
-        <button type="button" class="secondary small" id="micTest">Testen</button>
+        <button type="button" class="btn small" id="micTest">Testen</button>
       </div>
       <div class="meter" title="Der Strich ist die Schwelle: Nur was darüber kommt, zählt als Schlag." aria-hidden="true"><div class="meter-fill" id="meterFill"></div><div class="meter-mark" id="meterMark" hidden></div></div>
-      <div class="sens-row"><label for="sens">Empfindlichkeit</label><span class="sens-desc" id="sensDesc"></span></div>
+      <div class="sens-row"><label for="sens">Empfindlichkeit</label><span class="sens-desc" id="sensDesc"></span><button type="button" class="btn tiny" id="sensAuto" aria-pressed="false">Auto</button></div>
       <input type="range" id="sens" min="0" max="100" step="1" aria-describedby="sensDesc">
     </section>
 
     <p class="status" id="status" aria-live="polite"></p>
-    <button type="button" class="primary" id="startBtn">Start</button>
+    <button type="button" class="btn fill big block" id="startBtn">Start</button>
     <p class="warn-line" id="leakWarn" hidden></p>
     <p class="note" id="stageNote"></p>
     <div id="liveSlot"></div>
@@ -351,15 +382,23 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card empty-state" id="evalEmpty">
       <h2>Noch keine Auswertung</h2>
       <p id="evalEmptyText">Nach einer Aufnahme erscheint hier die Auswertung. Frühere Aufnahmen öffnest du im Verlauf.</p>
-      <button type="button" class="secondary inline" id="goHistory">Zum Verlauf</button>
+      <button type="button" class="btn small" id="goHistory">Zum Verlauf</button>
     </section>
     <section class="card" id="summary" hidden>
-      <p class="help rec-info" id="recInfo"></p>
+      <div class="rec-head">
+        <div class="rec-titles"><p class="rec-name" id="recName" hidden></p><p class="help rec-info" id="recInfo"></p></div>
+        <button type="button" class="btn tiny" id="recRename" hidden>Benennen</button>
+      </div>
+      <form class="rename" id="renameForm" hidden>
+        <input type="text" id="renameInput" maxlength="60" autocomplete="off" enterkeyhint="done" placeholder="z. B. Songtitel oder Übung" aria-label="Name der Aufnahme">
+        <button type="submit" class="btn small fill">Speichern</button>
+        <button type="button" class="btn small" id="renameCancel">Abbrechen</button>
+      </form>
       <p class="verdict" id="verdict"></p>
       <dl id="summaryList"></dl>
       <div class="btn-row" id="octaveRow" hidden>
-        <button type="button" class="secondary" id="octHalf">Tempo halbieren</button>
-        <button type="button" class="secondary" id="octDouble">Tempo verdoppeln</button>
+        <button type="button" class="btn small" id="octHalf">Tempo halbieren</button>
+        <button type="button" class="btn small" id="octDouble">Tempo verdoppeln</button>
       </div>
       <div id="summaryNotes"></div>
     </section>
@@ -376,10 +415,10 @@ button.hist-item { position: relative; padding-right: 28px; }
         <canvas class="tl-mini" id="tlMini" aria-label="Übersicht der ganzen Aufnahme"></canvas>
         <canvas class="tl-main" id="tlMain" role="img" aria-label="Zeitleiste"></canvas>
         <div class="tl-controls">
-          <button type="button" id="tlOut" aria-label="Herauszoomen">−</button>
-          <button type="button" id="tlIn" aria-label="Hineinzoomen">+</button>
-          <button type="button" id="tlFit">Alles</button>
-          <button type="button" id="tlLive">Live</button>
+          <button type="button" class="btn small" id="tlOut" aria-label="Herauszoomen">−</button>
+          <button type="button" class="btn small" id="tlIn" aria-label="Hineinzoomen">+</button>
+          <button type="button" class="btn small" id="tlFit">Alles</button>
+          <button type="button" class="btn small" id="tlLive">Live</button>
         </div>
         <p class="tl-stats num" id="tlStats"></p>
         <p class="help" id="tlHelp"></p>
@@ -400,8 +439,8 @@ button.hist-item { position: relative; padding-right: 28px; }
       <p class="help" id="distCaption"></p>
     </section>
     <div class="rec-actions" id="recActions" hidden>
-      <button type="button" class="text-btn" id="recExport">Als Datei exportieren</button>
-      <button type="button" class="text-btn" id="recDelete">Aufnahme löschen</button>
+      <button type="button" class="btn small" id="recExport">Als Datei exportieren</button>
+      <button type="button" class="btn small danger" id="recDelete">Aufnahme löschen</button>
     </div>
     <p class="help" id="recMsg" hidden></p>
   </section>
@@ -413,8 +452,8 @@ button.hist-item { position: relative; padding-right: 28px; }
       <p class="help" id="histHelp" hidden>Tippe auf eine Übung, um ihre ganze Auswertung wieder zu öffnen. Die Aufnahmen sind nur hier in diesem Browser gespeichert.</p>
       <div id="histList"></div>
       <div class="hist-tools">
-        <button type="button" class="text-btn" id="histImport">Aufnahme-Datei öffnen</button>
-        <button type="button" class="text-btn" id="histClear" hidden>Verlauf löschen</button>
+        <button type="button" class="btn small" id="histImport">Datei öffnen</button>
+        <button type="button" class="btn small danger" id="histClear" hidden>Verlauf löschen</button>
       </div>
       <input type="file" id="importFile" hidden>
       <p class="help" id="histMsg" role="status" hidden></p>
@@ -434,6 +473,11 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
     <section class="card">
       <h2>Klick</h2>
+      <span class="field-label" id="lblOut">Den Klick hörst du über</span>
+      <div class="seg" role="group" aria-labelledby="lblOut" style="margin-bottom:12px">
+        <button type="button" data-output="headphones">Kopfhörer</button>
+        <button type="button" data-output="speaker">Lautsprecher</button>
+      </div>
       <label class="field-label" for="clickVol">Lautstärke</label>
       <input type="range" id="clickVol" min="5" max="100" step="1">
       <p class="help">Hörst du den Klick über den Lautsprecher, stell ihn eher leise: Die App filtert ihn heraus, und je lauter er ist, desto kräftiger müssen deine Schläge sein, um mitgezählt zu werden.</p>
@@ -441,15 +485,20 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card" id="latCard">
       <h2>Latenz</h2>
       <p class="lat-values" id="latValues"></p>
-      <button type="button" class="secondary" id="latBtn">Latenz messen</button>
+      <button type="button" class="btn block" id="latBtn">Latenz messen</button>
       <p class="help" id="latStatus" aria-live="polite" hidden></p>
-      <p class="help">Misst, wie lange der Klick bis zum Mikrofon braucht, damit „früh“ und „spät“ stimmen. Einmal pro Ausgang nötig; gemessen wird der Ausgang, der unter Aufnahme eingestellt ist. Lautsprecher: Handy hinlegen. Kopfhörer: einen Ohrhörer direkt ans Mikrofon des Handys halten (meist unten am Gerät). Es kommen 8 Klicks – dabei nicht spielen.</p>
-      <button type="button" class="text-btn" id="latReset" hidden>Messwert für diesen Ausgang löschen</button>
+      <p class="help">Misst, wie lange der Klick bis zum Mikrofon braucht, damit „früh“ und „spät“ stimmen. Einmal pro Ausgang nötig; gemessen wird der Ausgang, den du oben unter „Klick“ eingestellt hast. Lautsprecher: Handy hinlegen. Kopfhörer: einen Ohrhörer direkt ans Mikrofon des Handys halten (meist unten am Gerät). Es kommen 8 Klicks – dabei nicht spielen.</p>
+      <button type="button" class="btn small danger" id="latReset" hidden style="margin-top:10px">Messwert für diesen Ausgang löschen</button>
+    </section>
+    <section class="card" id="appCard">
+      <h2>Als App nutzen</h2>
+      <p class="help" id="installInfo" style="margin:0 0 10px">Mit Symbol auf dem Startbildschirm, und nach dem ersten Öffnen auch ohne Internet.</p>
+      <button type="button" class="btn block fill" id="installBtn" hidden>App installieren</button>
     </section>
     <section class="card">
       <h2>Hilfe</h2>
-      <button type="button" class="secondary" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 4<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
+      <p class="about">Drum Timing Trainer · Version 5<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -490,14 +539,16 @@ button.hist-item { position: relative; padding-right: 28px; }
         <li>Empfindlichkeit einstellen: Unter <b>Aufnahme</b> neben „Mikrofonpegel“ auf <b>Testen</b> tippen, kurz still sein, dann ein paar Schläge spielen. Jeder erkannte Schlag lässt den Punkt daneben aufleuchten und wird gezählt.</li>
       </ol>
       <p>Der Strich im Pegel ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Fehlen leise Schläge (Ghost Notes), schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme.</p>
+      <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle vor jeder Aufnahme selbst ein: so empfindlich, wie das Grundrauschen im Raum es zulässt. Dafür am Anfang kurz still sein. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit.</p>
     </section>
 
     <section class="card">
       <h2>2. Mit Klick üben</h2>
       <ul>
         <li>Tempo einstellen. Bei <b>Du spielst</b> am besten <b>Auto</b> lassen: Die App erkennt Viertel, Achtel, 16tel und Triolen selbst, auch gemischt und in Fills. Einen festen Notenwert brauchst du nur, wenn du genau diesen üben willst.</li>
-        <li><b>Klick über Kopfhörer</b> ist am genauesten. Über den Lautsprecher hört das Mikrofon den Klick mit; die App filtert ihn heraus, dabei können sehr leise Schläge verloren gehen.</li>
-        <li>Nach dem Start zählt die App 4 Schläge ein, dann spielst du los.</li>
+        <li><b>Takt:</b> von 2/4 bis 12/8. Bei den /8-Takten zählt das Tempo in Achteln pro Minute. Der Klick betont den Taktanfang stark und die Gruppenanfänge etwas schwächer, bei 5/8 und 7/8 kannst du die Aufteilung wählen (z. B. 2+2+3).</li>
+        <li><b>Klick über Kopfhörer</b> (Einstellungen → Klick) ist am genauesten. Über den Lautsprecher hört das Mikrofon den Klick mit; die App filtert ihn heraus, dabei können sehr leise Schläge verloren gehen.</li>
+        <li>Nach dem Start zählt die App einen Takt ein (bei kurzen Takten zwei), dann spielst du los.</li>
         <li>Die große Anzeige zeigt jeden Schlag: <b>−</b> heißt zu früh, <b>+</b> heißt zu spät.</li>
       </ul>
       <div class="chips"><span class="chip good">bis ±20 ms</span><span class="chip warn">bis ±40 ms</span><span class="chip bad">darüber</span></div>
@@ -505,7 +556,15 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>3. Frei spielen – Songs und Band</h2>
+      <h2>3. Übungen</h2>
+      <ul>
+        <li><b>Stille Takte:</b> Der Klick setzt immer wieder aus, zum Beispiel 2 Takte mit und 2 ohne Klick. Die Punkte und die große Anzeige bleiben dann ebenfalls dunkel. Die Auswertung zeigt, wie weit du ohne Klick wegdriftest und wo du am Ende der stillen Takte liegst, wenn der Klick zurückkommt. Das funktioniert auch ohne Latenz-Messung. Bei sehr großem Abdriften (mehr als ein halber Notenwert) wird ein Schlag der falschen Zählzeit zugeordnet.</li>
+        <li><b>Tempo-Treppe:</b> Der Klick wird nach jedem Durchgang schneller, zum Beispiel alle 4 Takte um 5 BPM bis zu einem Höchsttempo. Mit „nur wenn sauber“ geht es erst weiter, wenn deine Streuung im Durchgang höchstens ±15 ms war und du durchgespielt hast; sonst bleibt das Tempo. Die Auswertung zeigt jede Stufe und dein höchstes sauberes Tempo.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>4. Frei spielen – Songs und Band</h2>
       <ul>
         <li>Ohne Klick: Die App erkennt das Tempo aus deinem Groove und zeichnet eine Tempokurve.</li>
         <li>Pausen über 4 Sekunden trennen Songs. Jeder Abschnitt wird einzeln ausgewertet.</li>
@@ -515,7 +574,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>4. Die Auswertung lesen</h2>
+      <h2>5. Die Auswertung lesen</h2>
       <ul>
         <li><b>Tendenz:</b> ob du im Schnitt vor (−) oder hinter (+) dem Klick liegst.</li>
         <li><b>Streuung:</b> wie stark deine Schläge schwanken. Bis etwa ±10 ms ist sehr gleichmäßig, über ±20 ms noch unruhig.</li>
@@ -528,16 +587,22 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>5. Verlauf und Export</h2>
+      <h2>6. Verlauf und Export</h2>
       <ul>
         <li>Jede Aufnahme wird im Browser gespeichert, die letzten 60. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
-        <li><b>Als Datei exportieren</b> (unten in der Auswertung) speichert eine Aufnahme als Datei, etwa als Sicherung. <b>Aufnahme-Datei öffnen</b> im Verlauf holt sie zurück – auch auf einem anderen Gerät.</li>
+        <li>Mit <b>Benennen</b> oben in der Auswertung gibst du einer Aufnahme einen Namen, etwa den Songtitel. Er steht dann im Verlauf und in exportierten Dateien.</li>
+        <li><b>Als Datei exportieren</b> (unten in der Auswertung) speichert eine Aufnahme als Datei, etwa als Sicherung. <b>Datei öffnen</b> im Verlauf holt sie zurück – auch auf einem anderen Gerät.</li>
         <li>Die Aufnahmen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg.</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>6. Gut zu wissen</h2>
+      <h2>7. Als App auf dem Startbildschirm</h2>
+      <p>Unter <b>Einstellungen → Als App nutzen</b> auf <b>App installieren</b> tippen. Erscheint der Knopf nicht, geht es auch über das Chrome-Menü (⋮): „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Nach dem ersten Öffnen läuft die App auch ohne Internet, etwa im Proberaum. Ist Internet da, lädt sie beim Start automatisch die neueste Version.</p>
+    </section>
+
+    <section class="card">
+      <h2>8. Gut zu wissen</h2>
       <ul>
         <li>Die App versucht, den Bildschirm während der Aufnahme anzulassen. Wechselst du die App oder geht der Bildschirm doch aus, stoppt die Aufnahme und wird bis dahin ausgewertet und gespeichert.</li>
         <li>In der Bandprobe hört das Mikrofon alle Instrumente. Die Tempokurve funktioniert trotzdem; die Werte einzelner Schläge sind beim Üben allein aussagekräftiger.</li>
@@ -576,13 +641,16 @@ class OnsetDetector {
     this.b0 = (1 + cw) / 2 / a0; this.b1 = -(1 + cw) / a0; this.b2 = (1 + cw) / 2 / a0;
     this.a1 = -2 * cw / a0; this.a2 = (1 - alpha) / a0;
     this.x1 = 0; this.x2 = 0; this.y1 = 0; this.y2 = 0;
+    this.noiseP99 = 0;
   }
+  emit(p) { this.onOnset(p.time, p.peak, p.full); }
   startNoiseMeasure() { this.measuring = true; this.measureVals = []; }
   stopNoiseMeasure() {
     this.measuring = false;
     const v = this.measureVals.slice().sort((a, b) => a - b);
     this.measureVals = [];
-    if (!v.length) return 0.001;
+    if (!v.length) { this.noiseP99 = 0.001; return 0.001; }
+    this.noiseP99 = Math.max(v[Math.min(v.length - 1, Math.floor(v.length * 0.99))], 0.0003);   // for the automatic sensitivity
     return Math.max(v[Math.floor(v.length / 2)], 0.0003);   // median, robust to single noises
   }
   readPeak() { const p = this.peakSinceRead; this.peakSinceRead = 0; return p; }
@@ -606,14 +674,14 @@ class OnsetDetector {
         if (rmsF > this.pending.full) this.pending.full = rmsF;
         if (t >= this.pending.time + 0.02) {
           const p = this.pending; this.pending = null;
-          this.onOnset(p.time, p.peak, p.full);
+          this.emit(p);
         }
       }
       const envOld = this.hist[this.histIdx];
       if (!this.measuring && rms > this.threshold && rms > this.rise * envOld &&
           (t - this.lastOnset) >= this.minGap) {
         this.lastOnset = t;
-        if (this.pending) { const p = this.pending; this.pending = null; this.onOnset(p.time, p.peak, p.full); }
+        if (this.pending) { const p = this.pending; this.pending = null; this.emit(p); }
         this.pending = { time: t, peak: rms, full: rmsF };
       }
       this.env = rms > this.env ? rms : this.env * this.release;
@@ -642,6 +710,8 @@ function circMean(vals, g) {
 }
 // sensitivity slider (0..100) -> threshold multiple of the noise floor (40 .. 3)
 function sensFactor(s) { return 40 * Math.pow(3 / 40, s / 100); }
+// automatic sensitivity: set once from the silence before playing – as sensitive as the room noise allows
+function autoThreshold(noiseMedian, noiseP99) { return Math.max(2.5 * noiseP99, 3 * noiseMedian, 0.001); }
 
 // ---------- click mode analysis ----------
 // raws: hit times in s relative to the first click (latency already removed when calibrated)
@@ -839,21 +909,46 @@ function windowExtremes(ts, vs, win, hop, minCount) {
 function heatAdd(heat, key, dev) { const c = heat[key] || (heat[key] = { n: 0, s: 0 }); c.n++; c.s += dev; }
 
 // ---------- click mode with automatic or fixed subdivision ----------
-// xs: hit times in s relative to the first click (latency removed when calibrated), chronological.
-function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
-  const cfg = gridConfig(beatSec, subMode);
-  const g = beatSec / (cfg.nb || cfg.nt);
-  const offset = (!calibrated && xs.length) ? circMean(xs, g) : 0;
-  // Center the grid on the player's own typical offset (median of the hits near the beat) before deciding
-  // binary vs. triplet feel; otherwise a player who is constantly 20 ms late can look like triplets.
-  const finest = Math.max(cfg.nb || 1, cfg.nt || 1);
+function statOf(a) {
+  if (!a.length) return { n: 0, mean: null, sd: null, rsd: null };
+  const m = mean(a), md = median(a);
+  return { n: a.length, mean: m, sd: sdev(a), rsd: 1.4826 * median(a.map(v => Math.abs(v - md))) };
+}
+// Click session on an explicit pulse grid: the tempo may change (tempo stair) and bars may be silent.
+// xs: hit times in s (latency removed) relative to beats[0]; beats: every scheduled pulse incl. count-in, beats[0] = 0.
+// o: { subMode, calibrated, countIn (pulses), perBar, silent[] (per pulse 0/1), pass[] (per pulse), passBpm[], passClean[] }
+function analyzeClick4(xs, beats, o) {
+  o = o || {};
+  const nB = beats.length, perBar = o.perBar || 4, countIn = Math.min(o.countIn || 0, Math.max(0, nB - 1));
+  const Ls = new Array(nB);
+  for (let j = 0; j + 1 < nB; j++) Ls[j] = beats[j + 1] - beats[j];
+  Ls[nB - 1] = nB > 1 ? Ls[nB - 2] : 0.5;
+  let minL = Infinity;
+  for (let j = countIn; j < nB - 1; j++) if (Ls[j] < minL) minL = Ls[j];
+  if (!isFinite(minL)) minL = Ls[0];
+  const cfg = gridConfig(o.cfgBeat || minL, o.subMode);
+  const nbG = cfg.nb || cfg.nt, finest = Math.max(cfg.nb || 1, cfg.nt || 1);
+  // position of every hit in pulses (b) plus the local pulse length (L)
+  const items = xs.map(x => {
+    let j = lowerBound(beats, x) - 1; if (j < 0) j = 0; if (j > nB - 1) j = nB - 1;
+    return { b: j + (x - beats[j]) / Ls[j], L: Ls[j] };
+  });
+  // without latency measurement: centre the grid on the player's own typical position
+  let off = 0;
+  if (!o.calibrated && items.length) {
+    let sn = 0, cs = 0;
+    for (const it of items) { const a = 2 * Math.PI * it.b * nbG; sn += Math.sin(a); cs += Math.cos(a); }
+    if (Math.abs(sn) > 1e-12 || Math.abs(cs) > 1e-12) off = Math.atan2(sn, cs) / (2 * Math.PI) / nbG;
+  }
+  // centre on the typical offset near the beat before deciding binary vs. triplet feel
+  // (otherwise a player who is constantly 20 ms late can look like triplets)
   const near = [];
-  xs.forEach(x => { const b = (x - offset) / beatSec, fr = b - Math.round(b); if (Math.abs(fr) < 0.5 / finest) near.push(fr * beatSec); });
+  items.forEach(it => { const b = it.b - off, fr = b - Math.round(b); if (Math.abs(fr) < 0.5 / finest) near.push(fr); });
   const center = near.length >= 8 ? median(near) : 0;
-  const items = xs.map(x => ({ b: (x - offset - center) / beatSec, L: beatSec }));
+  items.forEach(it => { it.b -= off + center; });
   const asg = assignGrid(items, cfg);
-  asg.forEach(a => { a.dev += center * 1000; });
-  const t0 = (countInBeats || 0) * beatSec;
+  asg.forEach((a, i) => { a.dev += center * items[i].L * 1000; });
+  const t0 = beats[countIn] || 0;
   const seen = new Set(); const hits = []; let unmatched = 0, extra = 0;
   const heat = {};
   for (let i = 0; i < xs.length; i++) {
@@ -861,22 +956,23 @@ function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
     if (!a.ok) { unmatched++; continue; }
     if (seen.has(a.key)) { extra++; continue; }
     seen.add(a.key);
-    const bar = ((a.beatIdx % 4) + 4) % 4;
-    hits.push({ t: xs[i] - t0, dev: a.dev, n: a.n, p: a.p, bar, feel: a.feel, k: a.k });
+    const pulse = a.beatIdx, pj = Math.max(0, Math.min(nB - 1, pulse));
+    const bar = ((pulse % perBar) + perBar) % perBar;
+    hits.push({ t: xs[i] - t0, dev: a.dev, n: a.n, p: a.p, bar, feel: a.feel, k: a.k, pulse, silent: o.silent ? o.silent[pj] : 0, pass: o.pass ? o.pass[pj] : 0 });
     heatAdd(heat, a.p === 0 ? 'D:' + bar : a.feel + a.n + ':' + bar + ':' + a.p, a.dev);
   }
   const n = hits.length;
-  const res = { cfg, n, hits, unmatched, extra, calibrated, heat, offsetMs: offset * 1000 };
+  const res = { cfg, n, hits, unmatched, extra, calibrated: !!o.calibrated, heat, offsetMs: off * (Ls[countIn] || 0) * 1000, perBar };
   if (!n) return res;
   const devs = hits.map(h => h.dev);
-  res.bias = calibrated ? mean(devs) : null;
+  res.bias = o.calibrated ? mean(devs) : null;
   res.spread = sdev(devs);
   res.within10 = devs.filter(d => Math.abs(d) <= 10).length / n;
   res.within = devs.filter(d => Math.abs(d) <= 20).length / n;
   res.duration = hits[n - 1].t - hits[0].t;
   res.driftTotal = (n >= 12 && res.duration >= 8) ? linreg(hits.map(h => h.t), devs).slope * res.duration : null;
   if (n >= 16) { res.spread1 = sdev(devs.slice(0, n >> 1)); res.spread2 = sdev(devs.slice(n >> 1)); }
-  if (!cfg.auto && subMode >= 2 && n >= 16) {
+  if (!cfg.auto && o.subMode >= 2 && n >= 16) {
     const ev = hits.filter(h => h.k % 2 === 0).map(h => h.dev), od = hits.filter(h => h.k % 2 !== 0).map(h => h.dev);
     if (ev.length >= 8 && od.length >= 8) { res.handA = mean(ev); res.handB = mean(od); }
   }
@@ -892,14 +988,42 @@ function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
       if (ev.length >= 8 && od.length >= 8) { res.handA = mean(ev); res.handB = mean(od); res.stream = cfg.D / stp; }
     }
   }
-  // which note values were actually played (share of hits per level; 1 = quarter, 2 = 8th, 4 = 16th, 3 = triplets ...)
+  // which note values were actually played (share of hits per level; 1 = one per pulse, 2 = two per pulse, 3 = triplets ...)
   const lv = {};
   hits.forEach(h => { const L = h.p === 0 ? 1 : h.n / gcd(h.p, h.n); lv[L] = (lv[L] || 0) + 1; });
   res.levels = Object.keys(lv).map(Number).map(L => ({ L, share: lv[L] / n })).sort((a, b) => a.L - b.L);
   res.hist = histogram(devs, 5, 60);
   res.extremes = windowExtremes(hits.map(h => h.t), devs, 30, 5, 20);
   res.ternaryShare = hits.filter(h => h.feel === 'T' && h.p !== 0).length / n;
+  // silent bars: with vs. without click, and where you are when the click comes back
+  if (o.silent) {
+    const lastBar = new Uint8Array(nB);
+    for (let j = 0; j < nB; j++) if (o.silent[j] && (j + 1 >= nB || !o.silent[j + 1])) for (let q = Math.max(0, j - perBar + 1); q <= j; q++) if (o.silent[q]) lastBar[q] = 1;
+    const pj = (h) => Math.max(0, Math.min(nB - 1, h.pulse));
+    res.phase = { on: statOf(hits.filter(h => !h.silent).map(h => h.dev)), off: statOf(hits.filter(h => h.silent).map(h => h.dev)), end: statOf(hits.filter(h => lastBar[pj(h)]).map(h => h.dev)) };
+    if (res.phase.on.n >= 8 && res.phase.end.n >= 4) res.phase.shift = res.phase.end.mean - res.phase.on.mean;
+    if (res.phase.on.n >= 8 && res.phase.off.n >= 4) res.phase.offShift = res.phase.off.mean - res.phase.on.mean;
+  }
+  // tempo stair: every pass and every tempo step
+  if (o.pass && o.passBpm) {
+    const per = {};
+    hits.forEach(h => { (per[h.pass] || (per[h.pass] = [])).push(h.dev); });
+    res.passes = o.passBpm.map((bpm, p) => Object.assign({ bpm, clean: o.passClean ? o.passClean[p] : null }, statOf(per[p] || [])));
+    const steps = [];
+    res.passes.forEach((ps, p) => { const last = steps[steps.length - 1]; if (last && last.bpm === ps.bpm) last.passes.push(p); else steps.push({ bpm: ps.bpm, passes: [p] }); });
+    steps.forEach(st => { Object.assign(st, statOf([].concat(...st.passes.map(p => per[p] || [])))); st.clean = st.passes.some(p => res.passes[p].clean === true); });
+    res.steps = steps;
+    const cl = steps.filter(st => st.clean).map(st => st.bpm);
+    res.bestClean = cl.length ? Math.max.apply(null, cl) : null;
+    res.reached = steps.length ? steps[steps.length - 1].bpm : null;
+  }
   return res;
+}
+// constant tempo in 4/4 (recordings from earlier versions)
+function constBeats(beatSec, lastT) { const b = []; for (let k = 0; k * beatSec <= lastT + 2 * beatSec; k++) b.push(k * beatSec); if (b.length < 2) b.push(beatSec); return b; }
+function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
+  const last = xs.length ? Math.max.apply(null, xs) : 0;
+  return analyzeClick4(xs, constBeats(beatSec, Math.max(last, (countInBeats || 0) * beatSec)), { subMode, calibrated, countIn: countInBeats || 0, perBar: 4 });
 }
 
 // ---------- tempo estimation from onsets (no click) ----------
@@ -1107,6 +1231,25 @@ function analyzeFree3(onsets, opts) {
   'use strict';
   const $ = (id) => document.getElementById(id);
   const SUB_NAMES = { 0: 'Auto', 1: 'Viertel', 2: 'Achtel', 3: 'Triolen', 4: '16tel' };
+  // meters: n pulses per bar; /8 meters count the tempo in eighths; groups decide the lighter accents
+  const METER_OPTS = [
+    { id: '2/4', n: 2, den: 4 }, { id: '3/4', n: 3, den: 4 }, { id: '4/4', n: 4, den: 4 }, { id: '5/4', n: 5, den: 4 },
+    { id: '5/8a', label: '5/8 3+2', n: 5, den: 8, groups: [3, 2] }, { id: '5/8b', label: '5/8 2+3', n: 5, den: 8, groups: [2, 3] },
+    { id: '6/8', n: 6, den: 8, groups: [3, 3] },
+    { id: '7/8a', label: '7/8 2+2+3', n: 7, den: 8, groups: [2, 2, 3] }, { id: '7/8b', label: '7/8 3+2+2', n: 7, den: 8, groups: [3, 2, 2] },
+    { id: '7/8c', label: '7/8 2+3+2', n: 7, den: 8, groups: [2, 3, 2] },
+    { id: '9/8', n: 9, den: 8, groups: [3, 3, 3] }, { id: '12/8', n: 12, den: 8, groups: [3, 3, 3, 3] }
+  ];
+  function meterOf(id) {
+    const m = METER_OPTS.find(x => x.id === id) || METER_OPTS[2];
+    const starts = new Set();
+    if (m.groups) { let a = 0; m.groups.forEach(g => { starts.add(a); a += g; }); }
+    return Object.assign({ label: m.label || m.id, starts }, m);
+  }
+  const SUBS = { 4: { 0: 'Auto', 1: 'Viertel', 2: 'Achtel', 3: 'Triolen', 4: '16tel' }, 8: { 0: 'Auto', 1: 'Achtel', 2: '16tel', 3: 'Triolen', 4: '32tel' } };
+  const LEVELS = { 4: { 1: 'Viertel', 2: 'Achtel', 4: '16tel', 8: '32tel', 3: 'Triolen', 6: 'Sextolen' }, 8: { 1: 'Achtel', 2: '16tel', 4: '32tel', 8: '64tel', 3: 'Triolen', 6: 'Sextolen' } };
+  const unitOf = (den) => den === 8 ? 'Achtel/min' : 'BPM';
+  const subName = (sub, den) => (SUBS[den] || SUBS[4])[sub] || '';
   const OUT_NAMES = { headphones: 'Kopfhörer', speaker: 'Lautsprecher' };
   const K_SET = 'dtt.settings.v2', K_CAL = 'dtt.calibration.v2', K_HIST = 'dtt.history.v2';
 
@@ -1126,6 +1269,14 @@ function analyzeFree3(onsets, opts) {
     clickVol: clampInt(saved.clickVol, 5, 100, 70),
     ftarget: saved.ftarget === true,
     theme: ['auto', 'light', 'dark'].includes(saved.theme) ? saved.theme : 'auto',
+    meter: METER_OPTS.some(m => m.id === saved.meter) ? saved.meter : '4/4',
+    practice: ['normal', 'silent', 'stair'].includes(saved.practice) ? saved.practice : 'normal',
+    silOn: clampInt(saved.silOn, 1, 4, 2), silOff: clampInt(saved.silOff, 1, 4, 2),
+    stStep: [1, 2, 3, 5, 10].includes(saved.stStep) ? saved.stStep : 5,
+    stBars: [2, 4, 8].includes(saved.stBars) ? saved.stBars : 4,
+    stMax: clampInt(saved.stMax, 31, 300, 160),
+    stClean: saved.stClean !== false,
+    sensAuto: saved.sensAuto === true,
     v: 3
   };
   if (saved.v !== 3) settings.sub = 0;          // new in this version: automatic note value as default
@@ -1197,17 +1348,31 @@ function analyzeFree3(onsets, opts) {
   function renderSetup() {
     const click = settings.mode === 'click';
     document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === settings.mode)));
-    document.querySelectorAll('[data-sub]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sub) === settings.sub)));
-    document.querySelectorAll('[data-output]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.output === settings.output)));
     document.querySelectorAll('[data-ftarget]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.ftarget === '1') === settings.ftarget)));
+    document.querySelectorAll('[data-practice]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.practice === settings.practice)));
+    $('stCleanBtn').classList.toggle('on', settings.stClean); $('stCleanBtn').setAttribute('aria-pressed', String(settings.stClean));
+    const mi = meterOf(settings.meter);
     $('freeTempoField').hidden = click;
     $('tempoField').hidden = !click && !settings.ftarget;
-    $('tempoLabel').textContent = click ? 'Tempo' : 'Zieltempo';
-    $('subField').hidden = !click;
-    $('outputField').hidden = !click;
+    $('tempoLabel').textContent = click ? (settings.practice === 'stair' ? 'Starttempo' : 'Tempo') : 'Zieltempo';
+    $('clickOpts').hidden = !click;
+    $('practiceField').hidden = !click;
+    $('silentOpts').hidden = !(click && settings.practice === 'silent');
+    $('stairOpts').hidden = !(click && settings.practice === 'stair');
     $('beats').hidden = !click;
     $('bpmOut').textContent = settings.bpm;
+    $('bpmUnit').textContent = click ? unitOf(mi.den) : 'BPM';
     $('bpmRange').value = settings.bpm;
+    $('meterSel').value = settings.meter;
+    // note values are named after the meter's pulse (quarters in x/4, eighths in x/8)
+    Array.from($('subSel').options).forEach(o => { o.textContent = subName(Number(o.value), mi.den); });
+    $('subSel').value = String(settings.sub);
+    document.querySelectorAll('[data-output]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.output === settings.output)));
+    $('silOn').value = String(settings.silOn); $('silOff').value = String(settings.silOff);
+    $('stStep').value = String(settings.stStep); $('stBars').value = String(settings.stBars);
+    $('stStepUnit').textContent = mi.den === 8 ? 'alle' : 'BPM alle';
+    fillStairMax();
+    if (!locked()) renderBeats(click ? mi : null);
     $('sens').value = settings.sens; renderSensDesc();
     $('clickVol').value = settings.clickVol;
     $('st1l').textContent = 'Schläge';
@@ -1216,7 +1381,26 @@ function analyzeFree3(onsets, opts) {
     renderStageNote();
     renderCalInfo();
   }
-  function setBpm(v) { if (setupLocked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; }
+  (function fillOptions() {
+    const add = (sel, list) => list.forEach(([v, t]) => { const o = document.createElement('option'); o.value = String(v); o.textContent = t; sel.append(o); });
+    add($('meterSel'), METER_OPTS.map(m => [m.id, m.label || m.id]));
+    add($('subSel'), [0, 1, 2, 3, 4].map(v => [v, SUB_NAMES[v]]));
+    add($('silOn'), [1, 2, 3, 4].map(v => [v, String(v)]));
+    add($('silOff'), [1, 2, 3, 4].map(v => [v, String(v)]));
+    add($('stStep'), [1, 2, 3, 5, 10].map(v => [v, '+' + v]));
+    add($('stBars'), [2, 4, 8].map(v => [v, String(v)]));
+  })();
+  function fillStairMax() {
+    const sel = $('stMax'), lo = Math.min(300, settings.bpm + settings.stStep);
+    const vals = []; for (let v = Math.ceil(lo / 5) * 5; v <= 300; v += 5) vals.push(v);
+    if (!vals.length || vals[0] !== lo) vals.unshift(lo);
+    const want = Math.max(lo, Math.min(300, settings.stMax));
+    if (!vals.includes(want)) { vals.push(want); vals.sort((a, b) => a - b); }
+    sel.textContent = '';
+    vals.forEach(v => { const o = document.createElement('option'); o.value = String(v); o.textContent = String(v); sel.append(o); });
+    sel.value = String(want);
+  }
+  function setBpm(v) { if (setupLocked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; fillStairMax(); }
   function holdRepeat(btn, fn) {
     let t1 = null, t2 = null;
     const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
@@ -1228,10 +1412,25 @@ function analyzeFree3(onsets, opts) {
   holdRepeat($('bpmUp'), () => setBpm(settings.bpm + 1));
   $('bpmRange').addEventListener('input', (e) => setBpm(e.target.value));
   document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.mode = b.dataset.mode; saveSettings(); resetLive(); renderSetup(); }));
-  document.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.sub = Number(b.dataset.sub); saveSettings(); renderSetup(); }));
-  document.querySelectorAll('[data-output]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.output = b.dataset.output; saveSettings(); renderSetup(); }));
+  const onSel = (id, fn) => $(id).addEventListener('change', (e) => { if (setupLocked()) { renderSetup(); return; } fn(e.target.value); saveSettings(); renderSetup(); });
+  onSel('meterSel', v => { settings.meter = v; });
+  onSel('subSel', v => { settings.sub = clampInt(v, 0, 4, 0); });
+  document.querySelectorAll('[data-output]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.output = b.dataset.output === 'speaker' ? 'speaker' : 'headphones'; saveSettings(); renderSetup(); }));
+  onSel('silOn', v => { settings.silOn = clampInt(v, 1, 4, 2); });
+  onSel('silOff', v => { settings.silOff = clampInt(v, 1, 4, 2); });
+  onSel('stStep', v => { settings.stStep = clampInt(v, 1, 10, 5); });
+  onSel('stBars', v => { settings.stBars = clampInt(v, 2, 8, 4); });
+  onSel('stMax', v => { settings.stMax = clampInt(v, 31, 300, 160); });
+  document.querySelectorAll('[data-practice]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.practice = b.dataset.practice; saveSettings(); renderSetup(); }));
+  $('stCleanBtn').addEventListener('click', () => { if (setupLocked()) return; settings.stClean = !settings.stClean; saveSettings(); renderSetup(); });
   document.querySelectorAll('[data-ftarget]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.ftarget = b.dataset.ftarget === '1'; saveSettings(); renderSetup(); }));
-  function renderSensDesc() { const v = settings.sens; $('sensDesc').textContent = v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel'; }
+  function renderSensDesc() {
+    const v = settings.sens, auto = settings.sensAuto;
+    $('sensDesc').textContent = auto ? 'automatisch nach Raumgeräusch' : v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel';
+    $('sens').disabled = auto;
+    $('sensAuto').classList.toggle('on', auto); $('sensAuto').setAttribute('aria-pressed', String(auto));
+  }
+  $('sensAuto').addEventListener('click', () => { settings.sensAuto = !settings.sensAuto; saveSettings(); renderSensDesc(); applyThreshold(); });
   $('sens').addEventListener('input', (e) => { settings.sens = clampInt(e.target.value, 0, 100, 55); saveSettings(); applyThreshold(); renderSensDesc(); });
   $('clickVol').addEventListener('input', (e) => {
     settings.clickVol = clampInt(e.target.value, 5, 100, 70); saveSettings();
@@ -1242,8 +1441,8 @@ function analyzeFree3(onsets, opts) {
   function setLockedUI(running) {
     const btn = $('startBtn');
     btn.textContent = running ? 'Stop' : 'Start';
-    btn.classList.toggle('stop', running);
-    document.querySelectorAll('[data-mode],[data-sub],[data-output],[data-ftarget],#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport')
+    btn.classList.toggle('danger', running);
+    document.querySelectorAll('[data-mode],[data-ftarget],[data-practice],#stCleanBtn,#meterSel,#subSel,[data-output],#silOn,#silOff,#stStep,#stBars,#stMax,#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport')
       .forEach(el => { el.disabled = running; });
     renderRunState();
   }
@@ -1267,7 +1466,17 @@ function analyzeFree3(onsets, opts) {
     if (runKind === 'latency') return `Latenz-Messung (${OUT_NAMES[settings.output]})`;
     const s = session;
     const mode = s ? s.mode : settings.mode, bpm = s ? s.bpm : settings.bpm;
-    if (mode === 'click') return `Mit Klick · ${bpm} BPM · ${SUB_NAMES[s ? s.subMode : settings.sub]} · ${OUT_NAMES[s ? s.output : settings.output]}`;
+    if (mode === 'click') {
+      const mi = meterOf(s ? s.meterId : settings.meter), pr = s ? s.practice : settings.practice;
+      const now = s && s.curBpm ? s.curBpm : bpm;
+      const parts = [`${now} ${unitOf(mi.den)}`];
+      if (mi.id !== '4/4') parts.push(mi.label);
+      parts.push(subName(s ? s.subMode : settings.sub, mi.den));
+      if (pr === 'silent') parts.push(`Stille Takte ${s ? s.silOn : settings.silOn}/${s ? s.silOff : settings.silOff}`);
+      else if (pr === 'stair') parts.push('Tempo-Treppe');
+      else parts.push(OUT_NAMES[s ? s.output : settings.output]);
+      return parts.join(' · ');
+    }
     const tg = s ? s.target : (settings.ftarget ? settings.bpm : null);
     return tg ? `Frei spielen · Zieltempo ${tg} BPM` : 'Frei spielen · Tempo wird erkannt';
   }
@@ -1291,7 +1500,7 @@ function analyzeFree3(onsets, opts) {
     if (c) { n.textContent = `${c.latencyMs} ms Latenz werden ausgeglichen.`; return; }
     n.append('Für „früh“ und „spät“ und die Heatmap einmal die Latenz messen – Streuung und Drift stimmen auch ohne. ');
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'text-btn'; b.textContent = 'Latenz jetzt messen';
+    b.type = 'button'; b.className = 'btn tiny'; b.textContent = 'Latenz jetzt messen';
     b.addEventListener('click', () => measureLatencyStandalone());
     n.append(b);
   }
@@ -1308,12 +1517,12 @@ function analyzeFree3(onsets, opts) {
     $('latBtn').textContent = `Latenz messen (${OUT_NAMES[settings.output]})`;
     $('latReset').hidden = !cal[settings.output];
     $('latReset').textContent = 'Messwert für diesen Ausgang löschen';
-    $('latReset').dataset.armed = '';
+    $('latReset').dataset.armed = ''; $('latReset').classList.remove('armed');
   }
   $('latBtn').addEventListener('click', () => measureLatencyStandalone());
   $('latReset').addEventListener('click', () => {
     const b = $('latReset');
-    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen zum Löschen'; return; }
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Nochmal tippen zum Löschen'; return; }
     delete cal[settings.output]; store.set(K_CAL, cal); renderCalInfo(); renderStageNote();
   });
 
@@ -1447,7 +1656,10 @@ function analyzeFree3(onsets, opts) {
       setTimeout(() => { if (d && d === detector) noiseFloor = d.stopNoiseMeasure(); res(); }, ms);
     });
   }
-  function baseThreshold() { return Math.max(noiseFloor * sensFactor(settings.sens), 0.0015); }
+  function baseThreshold() {
+    if (settings.sensAuto) return autoThreshold(noiseFloor, detector && detector.noiseP99 ? detector.noiseP99 : noiseFloor);
+    return Math.max(noiseFloor * sensFactor(settings.sens), 0.0015);
+  }
   function applyThreshold() {
     if (!detector || phase === 'latcal') return;
     let thr = baseThreshold();
@@ -1457,10 +1669,11 @@ function analyzeFree3(onsets, opts) {
     }
     detector.threshold = thr;
   }
-  function playClick(time, accent) {
+  function playClick(time, accent) {        // accent: 2 = bar start, 1 = group start, 0/false = normal
+    const lvl = accent === true ? 2 : (accent || 0);
     const osc = ctx.createOscillator(), g = ctx.createGain();
-    osc.frequency.value = accent ? 2000 : 1500;
-    const peak = accent ? 1.0 : 0.75;
+    osc.frequency.value = lvl === 2 ? 2000 : lvl === 1 ? 1750 : 1500;
+    const peak = lvl === 2 ? 1.0 : lvl === 1 ? 0.88 : 0.75;
     g.gain.setValueAtTime(0, time);
     g.gain.linearRampToValueAtTime(peak, time + 0.0005);
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
@@ -1576,9 +1789,12 @@ function analyzeFree3(onsets, opts) {
     const target = mode === 'free' && settings.ftarget ? settings.bpm : null;
     session = {
       mode, output, bpm: settings.bpm, subMode: settings.sub, target,
+      meterId: settings.meter, practice: mode === 'click' ? settings.practice : 'normal',
+      silOn: settings.silOn, silOff: settings.silOff,
+      stStep: settings.stStep, stBars: settings.stBars, stMax: Math.max(settings.bpm, settings.stMax), stClean: settings.stClean,
       calibrated: !!c, latency: c ? c.latencyMs / 1000 : 0,
       xs: [], countInOnsets: [], countInClicks: [], leakChecked: false,
-      fOn: [], fts: [], fpk: [], lastLive: -1, livePrev: null, liveHist: [], startTempo: null, secStart: 0,
+      fOn: [], fts: [], fpk: [], lastLive: -1, livePrev: null, liveHist: [], startTempo: null, secStart: 0, bands: [], marks: [],
       onsets: 0, started: Date.now()
     };
     phase = 'session';
@@ -1586,7 +1802,7 @@ function analyzeFree3(onsets, opts) {
     lastResult = null;
     if (mode === 'click') {
       startMetronome();
-      TL.reset('dev', { showBias: session.calibrated, relative: !session.calibrated });
+      TL.reset('dev', { showBias: session.calibrated, relative: !session.calibrated, bands: session.bands, marks: session.marks });
     } else {
       session.t0 = ctx.currentTime;
       session.prior = tempoPrior(target || 130, target ? 0.25 : 0.9);
@@ -1645,27 +1861,66 @@ function analyzeFree3(onsets, opts) {
 
   function startMetronome() {
     const s = session;
+    s.mi = meterOf(s.meterId);
+    s.perBar = s.mi.n;
+    s.unit = unitOf(s.mi.den);
     s.beat = 60 / s.bpm;
-    s.cfg = gridConfig(s.beat, s.subMode);
-    s.g = s.beat / (s.cfg.nb || s.cfg.nt);
+    s.ciBars = s.perBar * s.beat < 2 ? 2 : 1;          // short bars get a two-bar count-in
+    s.countIn = s.ciBars * s.perBar;
+    s.cfgBeat = s.practice === 'stair' ? 60 / s.stMax : s.beat;   // the grid must still fit at the fastest tempo
+    s.cfg = gridConfig(s.cfgBeat, s.subMode);
+    s.nbG = s.cfg.nb || s.cfg.nt;
+    s.g = s.beat / s.nbG;
     s.finest = Math.max(s.cfg.nb || 1, s.cfg.nt || 1);
     s.lc = { sin: 0, cos: 0, groupJ: null, group: [], prevFeel: s.cfg.nb ? 'B' : 'T', lastFeel: null, seen: new Set(), n: 0, mean: 0, m2: 0, near: [], center: 0 };
     s.beat0 = ctx.currentTime + 0.4;
-    s.countInEnd = s.beat0 + 4 * s.beat;
+    s.ciRel = s.countIn * s.beat;
+    s.countInEnd = s.beat0 + s.ciRel;
+    s.beatsRel = []; s.silentArr = []; s.passArr = []; s.passBpm = []; s.passClean = []; s.passDevs = [];
+    s.curBpm = s.bpm; s.passIdx = 0; s.msg = ''; s.msgUntil = 0; s.inSilent = false;
+    s.bands.length = 0; s.marks.length = 0;
+    if (s.practice === 'stair') s.marks.push({ t: 0, label: String(s.bpm) });
     beatIdx = 0;
     nextBeat = s.beat0;
+    renderBeats(s.mi);
     setStatus('Einzählen …');
     schedule();
+  }
+  // end of a tempo-stair pass: decide the tempo of the next one
+  function stairPass(s, p, at) {
+    if (p > 0) {
+      const st = statOf(s.passDevs[p - 1] || []), need = Math.ceil(0.5 * s.stBars * s.perBar);
+      const clean = st.n >= need && st.rsd != null && st.rsd <= 15;
+      s.passClean[p - 1] = clean;
+      const before = s.curBpm;
+      if ((clean || !s.stClean) && s.curBpm < s.stMax) s.curBpm = Math.min(s.stMax, s.curBpm + s.stStep);
+      const spread = st.rsd != null ? `±${r0(st.rsd)} ms` : 'zu wenige Schläge';
+      if (s.curBpm > before) s.msg = (s.stClean ? `Sauber (${spread}) – jetzt ` : 'Jetzt ') + `${s.curBpm} ${s.unit}`;
+      else if (s.curBpm >= s.stMax && (clean || !s.stClean)) s.msg = `Höchsttempo ${s.curBpm} ${s.unit}`;
+      else s.msg = `Noch nicht sauber (${spread}) – nochmal ${s.curBpm}`;
+      s.msgUntil = at + 3.5;
+      if (s.curBpm !== before) s.marks.push({ t: at - s.beat0 - s.ciRel, label: String(s.curBpm) });
+      $('runLine').textContent = runLineText();
+    }
+    s.passIdx = p; s.passBpm[p] = s.curBpm; s.passDevs[p] = [];
   }
   function schedule() {
     if (!ctx || !session || session.mode !== 'click') return;
     const s = session, horizon = ctx.currentTime + 0.2;
     while (nextBeat < horizon) {
-      playClick(nextBeat, beatIdx % 4 === 0);
-      uiBeats.push({ time: nextBeat, idx: beatIdx });
-      if (beatIdx < 4) s.countInClicks.push(nextBeat);
+      const k = beatIdx, inBar = k % s.perBar, after = Math.floor(k / s.perBar) - s.ciBars;   // bars since the count-in
+      let silent = 0;
+      if (s.practice === 'silent' && after >= 0) silent = (after % (s.silOn + s.silOff)) >= s.silOn ? 1 : 0;
+      if (s.practice === 'stair' && after >= 0 && inBar === 0 && after % s.stBars === 0) stairPass(s, after / s.stBars, nextBeat);
+      const tRel = nextBeat - s.beat0 - s.ciRel, prevSilent = s.silentArr.length ? s.silentArr[s.silentArr.length - 1] : 0;
+      if (silent && !prevSilent) s.bands.push({ a: tRel, b: Infinity });
+      if (!silent && prevSilent && s.bands.length) s.bands[s.bands.length - 1].b = tRel;
+      if (!silent) playClick(nextBeat, inBar === 0 ? 2 : s.mi.starts.has(inBar) ? 1 : 0);
+      uiBeats.push({ time: nextBeat, idx: inBar, silent, k });
+      s.beatsRel.push(nextBeat - s.beat0); s.silentArr.push(silent); s.passArr.push(s.practice === 'stair' && after >= 0 ? s.passIdx : 0);
+      if (k < s.countIn) s.countInClicks.push(nextBeat);
       beatIdx++;
-      nextBeat = s.beat0 + beatIdx * s.beat;
+      nextBeat += 60 / s.curBpm;
     }
     schedTimer = setTimeout(schedule, 25);
   }
@@ -1680,21 +1935,23 @@ function analyzeFree3(onsets, opts) {
 
   // live assignment of one hit to the (auto) grid
   function liveAssign(s, x) {
-    const lc = s.lc;
-    let offset = 0;
+    const lc = s.lc, B = s.beatsRel;
+    let j = lowerBound(B, x) - 1; if (j < 0) j = 0; if (j > B.length - 1) j = B.length - 1;
+    const L = j + 1 < B.length ? B[j + 1] - B[j] : 60 / s.curBpm;
+    let b = j + (x - (B[j] || 0)) / L;                     // position in pulses
     if (!s.calibrated) {
-      const a = 2 * Math.PI * x / s.g; lc.sin += Math.sin(a); lc.cos += Math.cos(a);
-      offset = Math.atan2(lc.sin, lc.cos) / (2 * Math.PI) * s.g;
+      const a = 2 * Math.PI * b * s.nbG; lc.sin += Math.sin(a); lc.cos += Math.cos(a);
+      b -= Math.atan2(lc.sin, lc.cos) / (2 * Math.PI) / s.nbG;
     }
-    const b0 = (x - offset) / s.beat, fr = b0 - Math.round(b0);
-    if (Math.abs(fr) < 0.5 / s.finest) { lc.near.push(fr * s.beat); if (lc.near.length > 41) lc.near.shift(); lc.center = lc.near.length >= 8 ? median(lc.near) : 0; }
-    const b = b0 - lc.center / s.beat;
-    const j = Math.floor(b + 0.5 / s.finest);
-    if (lc.groupJ !== j) { if (lc.lastFeel) lc.prevFeel = lc.lastFeel; lc.groupJ = j; lc.group = []; }
-    lc.group.push({ b, L: s.beat });
+    const fr = b - Math.round(b);
+    if (Math.abs(fr) < 0.5 / s.finest) { lc.near.push(fr); if (lc.near.length > 41) lc.near.shift(); lc.center = lc.near.length >= 8 ? median(lc.near) : 0; }
+    b -= lc.center;
+    const jj = Math.floor(b + 0.5 / s.finest);
+    if (lc.groupJ !== jj) { if (lc.lastFeel) lc.prevFeel = lc.lastFeel; lc.groupJ = jj; lc.group = []; }
+    lc.group.push({ b, L });
     const asg = assignGrid(lc.group, s.cfg, lc.prevFeel);
     const a = asg[asg.length - 1];
-    a.dev += lc.center * 1000;
+    a.dev += lc.center * L * 1000;
     lc.lastFeel = a.feel;
     if (!a.ok || lc.seen.has(a.key)) return null;
     lc.seen.add(a.key);
@@ -1709,11 +1966,15 @@ function analyzeFree3(onsets, opts) {
     s.xs.push(x);
     const a = liveAssign(s, x);
     if (a) {
+      const pj = Math.max(0, Math.min(s.silentArr.length - 1, a.beatIdx));
+      if (s.practice === 'stair') { const p = s.passArr[pj] || 0; (s.passDevs[p] || (s.passDevs[p] = [])).push(a.dev); }
       const shown = a.dev;
-      showDial(signed(shown) + ' ms', s.calibrated ? (shown > 3 ? 'spät' : shown < -3 ? 'früh' : 'genau') : 'zu deinem Mittel', Math.abs(shown));
-      pushChart(shown);
-      TL.append(x - 4 * s.beat, shown);
-    } else {
+      if (!s.silentArr[pj] && !s.inSilent) {            // no feedback while the click is silent
+        showDial(signed(shown) + ' ms', s.calibrated ? (shown > 3 ? 'spät' : shown < -3 ? 'früh' : 'genau') : 'zu deinem Mittel', Math.abs(shown));
+        pushChart(shown);
+      }
+      TL.append(x - s.ciRel, shown);
+    } else if (!s.inSilent) {
       showDial('?', 'zwischen den Rasterpunkten', 999);
     }
     const lc = s.lc;
@@ -1785,7 +2046,12 @@ function analyzeFree3(onsets, opts) {
     $('st1').textContent = '0'; $('st2').textContent = '–'; $('st3').textContent = '–';
     drawChart();
   }
-  function lightBeat(i) { const dots = $('beats').children; for (let j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === i); }
+  function lightBeat(i) { const dots = $('beats').children, n = dots.length || 1, k = i < 0 ? -1 : i % n; for (let j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === k); }
+  function renderBeats(mi) {
+    const box = $('beats'); box.textContent = ''; box.classList.remove('silent');
+    const n = mi ? mi.n : 4;
+    for (let i = 0; i < n; i++) { const d = document.createElement('span'); if (i > 0 && mi && mi.starts.has(i)) d.className = 'g'; box.append(d); }
+  }
   function dbPct(v) { if (!(v > 0)) return 0; return Math.min(100, Math.max(0, (20 * Math.log10(v) + 66) / 66 * 100)); }
   function renderMeter(v, thr) {
     $('meterFill').style.width = dbPct(v) + '%';
@@ -1793,17 +2059,31 @@ function analyzeFree3(onsets, opts) {
     if (thr) { m.hidden = false; m.style.left = 'calc(' + dbPct(thr) + '% - 1px)'; } else m.hidden = true;
   }
   function startRaf() { if (!rafId) rafId = requestAnimationFrame(frame); }
+  function pulseShown(u) {
+    const s = session;
+    if (u.silent) {
+      lightBeat(-1);
+      if (s && !s.inSilent) { s.inSilent = true; $('beats').classList.add('silent'); showDial('…', 'ohne Klick', -1); }
+      return;
+    }
+    if (s && s.inSilent) { s.inSilent = false; $('beats').classList.remove('silent'); showDial('–', 'wieder mit Klick', -1); }
+    lightBeat(u.idx);
+  }
   function frame() {
     rafId = requestAnimationFrame(frame);
     if (!ctx || !detector) return;
     meterValue = Math.max(detector.readPeak(), meterValue * 0.88);
     renderMeter(meterValue, detector.threshold);
     const now = ctx.currentTime - (ctx.outputLatency || 0);
-    while (uiBeats.length && uiBeats[0].time <= now) lightBeat(uiBeats.shift().idx % 4);
+    while (uiBeats.length && uiBeats[0].time <= now) pulseShown(uiBeats.shift());
     const s = session;
     if (phase === 'session' && s) {
       if (s.mode === 'click' && s.countInEnd) {
-        const txt = ctx.currentTime < s.countInEnd ? 'Einzählen …' : 'Läuft – spiel zum Klick.';
+        let txt;
+        if (ctx.currentTime < s.countInEnd) txt = 'Einzählen …';
+        else if (s.inSilent) txt = 'Ohne Klick – halte das Tempo';
+        else if (s.msg && ctx.currentTime < s.msgUntil) txt = s.msg;
+        else txt = s.practice === 'silent' ? 'Mit Klick – gleich wieder ohne' : 'Läuft – spiel zum Klick.';
         if (statusText !== txt) setStatus(txt);
         if (!s.leakChecked && ctx.currentTime > s.countInEnd + 0.7) { s.leakChecked = true; leakCheck(s); }
         TL.setNow(Math.max(0, ctx.currentTime - s.countInEnd));
@@ -1870,7 +2150,7 @@ function analyzeFree3(onsets, opts) {
   const TL = (function () {
     const main = $('tlMain'), mini = $('tlMini');
     const GL = 36, GR = 6, GT = 8, GB = 20;
-    const st = { kind: 'dev', ts: [], vs: [], cs: [0], cs2: [0], refs: [], refLabel: '', showBias: false, relative: false,
+    const st = { kind: 'dev', ts: [], vs: [], cs: [0], cs2: [0], refs: [], refLabel: '', showBias: false, relative: false, bands: [], marks: [],
       now: 0, live: false, follow: true, view: { start: 0, span: 30 }, wantSpan: 30, yMax: 60, yR: 8, lo: 100, hi: 140, raf: 0, lastDraw: 0, smoothMin: null, smoothMax: null };
     const ptrs = new Map(); let panX0 = 0, panStart0 = 0, pinch = null, moved = false;
 
@@ -1984,6 +2264,20 @@ function analyzeFree3(onsets, opts) {
           if (r !== labelRef) { g.fillStyle = col.muted; g.fillText(String(r0(r.v)), xa + 3, yOf(r.v) - 4); }
         });
       }
+      // silent stretches (no click) and tempo steps
+      st.bands.forEach(bd => {
+        const a = Math.max(bd.a, start), b = Math.min(bd.b === Infinity ? duration() : bd.b, start + span);
+        if (b <= a) return;
+        const xa = tx(a), xb = tx(b);
+        g.fillStyle = col.line; g.globalAlpha = 0.45; g.fillRect(xa, y0, xb - xa, y1 - y0); g.globalAlpha = 1;
+        if (xb - xa > 58) { g.fillStyle = col.muted; g.textAlign = 'center'; g.fillText('ohne Klick', (xa + xb) / 2, y1 - 4); g.textAlign = 'left'; }
+      });
+      st.marks.forEach(mk => {
+        if (mk.t < start || mk.t > start + span) return;
+        const x = Math.round(tx(mk.t)) + 0.5;
+        g.strokeStyle = col.accent; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); g.setLineDash([]);
+        g.fillStyle = col.accent; g.font = 'bold 10.5px system-ui, sans-serif'; g.fillText(mk.label, x + 3, y0 + 22); g.font = '10.5px system-ui, sans-serif';
+      });
       // time axis
       const steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800];
       const step = steps.find(sp => pw / (span / sp) >= 60) || 1800;
@@ -2046,6 +2340,9 @@ function analyzeFree3(onsets, opts) {
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
       const dur = duration(), Ws = Math.max(4, dur / 40);
+      g.fillStyle = cssVar('--line'); g.globalAlpha = 0.5;
+      st.bands.forEach(bd => { const a = bd.a / dur * W, b = (bd.b === Infinity ? dur : bd.b) / dur * W; if (b > a) g.fillRect(a, 0, b - a, H); });
+      g.globalAlpha = 1;
       let yOf;
       if (st.kind === 'dev') yOf = v => 3 + (Math.max(-40, Math.min(40, v)) + 40) / 80 * (H - 6);
       else { const lo = st.lo, hi = st.hi; yOf = v => 3 + (1 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * (H - 6); }
@@ -2135,7 +2432,7 @@ function analyzeFree3(onsets, opts) {
     return {
       reset(kind, o) {
         o = o || {};
-        Object.assign(st, { kind, ts: [], vs: [], refs: o.ref != null ? [{ a: 0, b: 1e9, v: o.ref }] : [], refLabel: o.refLabel || '', showBias: !!o.showBias, relative: !!o.relative, now: 0, live: true, follow: true });
+        Object.assign(st, { kind, ts: [], vs: [], refs: o.ref != null ? [{ a: 0, b: 1e9, v: o.ref }] : [], refLabel: o.refLabel || '', showBias: !!o.showBias, relative: !!o.relative, now: 0, live: true, follow: true, bands: o.bands || [], marks: o.marks || [] });
         st.view = { start: 0, span: kind === 'dev' ? 30 : 60 }; st.wantSpan = st.view.span;
         rebuildPrefix(); computeRanges();
         $('tlHelp').textContent = kind === 'dev'
@@ -2159,7 +2456,7 @@ function analyzeFree3(onsets, opts) {
       },
       setSeries(kind, ts, vs, o) {
         o = o || {};
-        Object.assign(st, { kind, ts: ts.slice(), vs: vs.slice(), refs: o.refs || [], refLabel: o.refLabel || '', showBias: !!o.showBias, relative: !!o.relative, live: false, follow: false });
+        Object.assign(st, { kind, ts: ts.slice(), vs: vs.slice(), refs: o.refs || [], refLabel: o.refLabel || '', showBias: !!o.showBias, relative: !!o.relative, live: false, follow: false, bands: o.bands || [], marks: o.marks || [] });
         if (o.now != null) st.now = o.now;
         rebuildPrefix(); computeRanges();
         $('tlHelp').textContent = kind === 'dev'
@@ -2179,7 +2476,7 @@ function analyzeFree3(onsets, opts) {
     const dt = document.createElement('dt'); dt.textContent = label;
     const dd = document.createElement('dd'); dd.className = 'num'; dd.textContent = value;
     if (jumpT != null) {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'link'; b.textContent = 'zeigen';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn tiny'; b.textContent = 'zeigen';
       b.addEventListener('click', () => { TL.focus(jumpT, 60); try { $('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ } });
       dd.append(b);
     }
@@ -2282,8 +2579,8 @@ function analyzeFree3(onsets, opts) {
     document.querySelectorAll('[data-heatref]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.heatref === mode)));
     $('heatHelp').textContent = mode === 'own'
       ? `Abweichung je Position im Takt, verglichen mit deinem Schnitt (${signed(bias)} ms zum Klick). So siehst du, welche Noten aus der Reihe fallen. + heißt später, − heißt früher.`
-      : 'Durchschnittliche Abweichung je Position im Takt zum Klick (Zeilen = Zählzeiten 1–4). + heißt spät, − heißt früh. Grau: zu wenige Schläge.';
-    renderHeat(a.heat, a.cfg, 4, mode === 'own' ? bias : 0);
+      : `Durchschnittliche Abweichung je Position im Takt zum Klick (Zeilen = Zählzeiten 1–${a.perBar || 4}). + heißt spät, − heißt früh. Grau: zu wenige Schläge.`;
+    renderHeat(a.heat, a.cfg, a.perBar || 4, mode === 'own' ? bias : 0);
   }
   document.querySelectorAll('[data-heatref]').forEach(b => b.addEventListener('click', () => setHeatRef(b.dataset.heatref)));
 
@@ -2303,14 +2600,32 @@ function analyzeFree3(onsets, opts) {
   let currentRec = null;
   function recFromSession(s) {
     if (s.mode === 'click') {
-      return { v: 1, mode: 'click', started: s.started, bpm: s.bpm, subMode: s.subMode, calibrated: s.calibrated, latency: s.latency, output: s.output, ci: 4, xs: Float64Array.from(s.xs) };
+      const stair = s.practice === 'stair', sil = s.practice === 'silent';
+      return { v: 2, mode: 'click', started: s.started, bpm: s.bpm, subMode: s.subMode, calibrated: s.calibrated, latency: s.latency, output: s.output,
+        ci: s.countIn, meter: s.meterId, perBar: s.perBar, practice: s.practice, cfgBeat: s.cfgBeat,
+        popt: { silOn: s.silOn, silOff: s.silOff, stStep: s.stStep, stBars: s.stBars, stMax: s.stMax, stClean: s.stClean },
+        xs: Float64Array.from(s.xs), beats: Float64Array.from(s.beatsRel),
+        silent: sil ? Uint8Array.from(s.silentArr) : null, pass: stair ? Int16Array.from(s.passArr) : null,
+        passBpm: stair ? s.passBpm.slice() : null, passClean: stair ? s.passClean.map(v => v === undefined ? null : v) : null };
     }
     const n = s.fOn.length, fT = new Float64Array(n), fP = new Float32Array(n), fS = new Float32Array(n);
     s.fOn.forEach((o, i) => { fT[i] = o.t; fP[i] = o.peak; fS[i] = o.strength; });
     return { v: 1, mode: 'free', started: s.started, target: s.target, scale: 1, fT, fP, fS };
   }
   function sessionFromRec(rec) {
-    if (rec.mode === 'click') return { mode: 'click', started: rec.started, bpm: rec.bpm, beat: 60 / rec.bpm, subMode: rec.subMode, calibrated: rec.calibrated, xs: Array.from(rec.xs) };
+    if (rec.mode === 'click') {
+      const xs = Array.from(rec.xs), beat = 60 / rec.bpm;
+      const base = { mode: 'click', started: rec.started, bpm: rec.bpm, beat, subMode: rec.subMode, calibrated: rec.calibrated, xs };
+      if (rec.beats && rec.beats.length > 1) {
+        return Object.assign(base, { beats: Array.from(rec.beats), countIn: rec.ci || 0, meterId: rec.meter || '4/4', perBar: rec.perBar || meterOf(rec.meter).n,
+          practice: rec.practice || 'normal', popt: rec.popt || {}, cfgBeat: rec.cfgBeat || null,
+          silent: rec.silent ? Array.from(rec.silent) : null, pass: rec.pass ? Array.from(rec.pass) : null,
+          passBpm: rec.passBpm || null, passClean: rec.passClean || null });
+      }
+      // recordings from earlier versions: constant tempo in 4/4 with 4 count-in beats
+      const last = xs.length ? Math.max.apply(null, xs) : 0;
+      return Object.assign(base, { beats: constBeats(beat, Math.max(last, 4 * beat)), countIn: rec.ci || 4, meterId: '4/4', perBar: 4, practice: 'normal', popt: {}, cfgBeat: null, silent: null, pass: null, passBpm: null, passClean: null });
+    }
     const fOn = new Array(rec.fT.length);
     for (let i = 0; i < fOn.length; i++) fOn[i] = { t: rec.fT[i], peak: rec.fP[i], strength: rec.fS[i] };
     return { mode: 'free', started: rec.started, target: rec.target, fOn };
@@ -2329,9 +2644,20 @@ function analyzeFree3(onsets, opts) {
     $('tlKind').hidden = true;
     let entry;
     if (s.mode === 'click') {
-      const a = analyzeClick3(s.xs, s.beat, s.subMode, s.calibrated, rec.ci || 4);
+      const a = analyzeClick4(s.xs, s.beats, { subMode: s.subMode, calibrated: s.calibrated, countIn: s.countIn, perBar: s.perBar,
+        silent: s.silent, pass: s.pass, passBpm: s.passBpm, passClean: s.passClean, cfgBeat: s.cfgBeat });
       lastResult = { mode: 'click', a, s };
-      TL.setSeries('dev', a.hits.map(h => h.t), a.hits.map(h => h.dev), { showBias: s.calibrated, relative: !s.calibrated });
+      const t0 = s.beats[Math.min(s.countIn, s.beats.length - 1)] || 0, bands = [], marks = [];
+      if (s.silent) for (let j = 0; j < s.silent.length; j++) {
+        if (s.silent[j] && (j === 0 || !s.silent[j - 1])) bands.push({ a: s.beats[j] - t0, b: Infinity });
+        if (!s.silent[j] && j > 0 && s.silent[j - 1] && bands.length) bands[bands.length - 1].b = s.beats[j] - t0;
+      }
+      if (s.pass && s.passBpm) for (let j = 0; j < s.pass.length; j++) {
+        if (j < s.countIn) continue;
+        const p = s.pass[j];
+        if (j === s.countIn || p !== s.pass[j - 1]) { const bp = s.passBpm[p]; if (bp != null && (!marks.length || marks[marks.length - 1].label !== String(bp))) marks.push({ t: s.beats[j] - t0, label: String(bp) }); }
+      }
+      TL.setSeries('dev', a.hits.map(h => h.t), a.hits.map(h => h.dev), { showBias: s.calibrated, relative: !s.calibrated, bands, marks });
       entry = renderClickSummary(s, a);
     } else {
       entry = renderFree(s, rec.scale || 1);
@@ -2339,7 +2665,10 @@ function analyzeFree3(onsets, opts) {
     const info = `Aufnahme vom ${fmtDate(rec.started)} · ${rec.mode === 'click' ? 'mit Klick' : 'frei gespielt'}`;
     $('recInfo').textContent = info; $('tlSub').hidden = true;
     $('recActions').hidden = !entry;
-    const del = $('recDelete'); del.dataset.armed = ''; del.textContent = 'Aufnahme löschen';
+    if (entry && rec.name) entry.name = rec.name;
+    $('renameForm').hidden = true;
+    renderRecHead(!!entry);
+    const del = $('recDelete'); del.dataset.armed = ''; del.classList.remove('armed'); del.textContent = 'Aufnahme löschen';
     recMsg('');
     $('summary').hidden = false; $('timeline').hidden = false;
     if (entry && histMode === 'add') addHistory(entry);
@@ -2347,6 +2676,29 @@ function analyzeFree3(onsets, opts) {
     else renderHistory();
     return entry || null;
   }
+  function renderRecHead(ok) {
+    const nm = currentRec && currentRec.name;
+    $('recName').textContent = nm || ''; $('recName').hidden = !nm;
+    $('recRename').hidden = !currentRec || !ok;
+    $('recRename').textContent = nm ? 'Umbenennen' : 'Benennen';
+  }
+  $('recRename').addEventListener('click', () => {
+    if (!currentRec) return;
+    $('renameInput').value = currentRec.name || '';
+    $('renameForm').hidden = false; $('recRename').hidden = true;
+    try { $('renameInput').focus(); } catch (e) { /* ignore */ }
+  });
+  $('renameCancel').addEventListener('click', () => { $('renameForm').hidden = true; renderRecHead(true); });
+  $('renameForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    if (!currentRec) return;
+    const v = $('renameInput').value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60);
+    if (v) currentRec.name = v; else delete currentRec.name;
+    $('renameForm').hidden = true;
+    renderRecHead(true);
+    updateHistory({ d: currentRec.started, name: v });
+    if (histGet().some(x => x.d === currentRec.started && x.full)) DB.put(currentRec).catch(() => {});
+  });
   function saveRec(rec) {
     DB.put(rec).then(() => { setHistFull(rec.started, true); askPersist(); })
       .catch(() => { if (currentRec === rec) recMsg('Diese Aufnahme konnte im Browser nicht gespeichert werden. Die Übersicht im Verlauf bleibt erhalten.'); });
@@ -2365,21 +2717,43 @@ function analyzeFree3(onsets, opts) {
   function renderClickSummary(s, a) {
     const dl = $('summaryList');
     if (a.n < 8) { $('verdict').textContent = 'Zu wenige Schläge für eine Auswertung.'; return null; }
-    const drift = a.driftTotal;
+    const mi = meterOf(s.meterId), unit = unitOf(mi.den), stair = s.practice === 'stair' && a.steps, silentMode = s.practice === 'silent' && a.phase;
+    const drift = stair ? null : a.driftTotal;
     let verdict;
-    if (drift != null && Math.abs(drift) >= 8) verdict = drift < 0 ? 'Du wirst im Verlauf schneller – du eilst.' : 'Du wirst im Verlauf langsamer – du schleppst.';
+    if (stair) {
+      const top = a.reached, best = a.bestClean;
+      verdict = best != null ? `Tempo-Treppe: sauber bis ${best} ${unit}` + (top > best ? `, erreicht ${top}.` : '.')
+        : (s.popt && s.popt.stClean === false ? `Tempo-Treppe: von ${a.steps[0].bpm} bis ${top} ${unit} gespielt.` : 'Tempo-Treppe: noch keine Stufe sauber (Streuung über ±15 ms).');
+    } else if (silentMode && a.phase.shift != null) {
+      const sh = a.phase.shift;
+      verdict = Math.abs(sh) <= 10 ? `Stark: Auch ohne Klick bleibst du im Tempo (${signed(sh)} ms, wenn er zurückkommt).`
+        : sh < 0 ? `Ohne Klick wirst du schneller: Wenn der Klick zurückkommt, bist du im Schnitt ${r0(-sh)} ms zu früh.`
+        : `Ohne Klick wirst du langsamer: Wenn der Klick zurückkommt, bist du im Schnitt ${r0(sh)} ms zu spät.`;
+    }
+    else if (drift != null && Math.abs(drift) >= 8) verdict = drift < 0 ? 'Du wirst im Verlauf schneller – du eilst.' : 'Du wirst im Verlauf langsamer – du schleppst.';
     else if (a.bias != null && Math.abs(a.bias) > 10) verdict = `Du spielst im Schnitt ${r0(Math.abs(a.bias))} ms ${a.bias > 0 ? 'hinter' : 'vor'} dem Klick.`;
     else if (a.spread <= 10) verdict = 'Sehr genau und gleichmäßig.';
     else if (a.spread <= 20) verdict = `Solide: kein Drift, Streuung ±${r0(a.spread)} ms.`;
     else verdict = `Kein Drift, aber noch unruhig (±${r0(a.spread)} ms).`;
     $('verdict').textContent = verdict;
-    const LV = { 1: 'Viertel', 2: 'Achtel', 4: '16tel', 8: '32tel', 3: 'Triolen', 6: 'Sextolen' };
-    let subTxt = SUB_NAMES[s.subMode];
+    const LV = LEVELS[mi.den] || LEVELS[4];
+    let subTxt = subName(s.subMode, mi.den);
     if (s.subMode === 0) {
       const used = (a.levels || []).filter(l => l.L > 1 && l.share >= 0.05 && LV[l.L]).map(l => LV[l.L]);
-      subTxt = 'Auto: ' + (used.length ? used.join(', ') : 'Viertel');
+      subTxt = 'Auto: ' + (used.length ? used.join(', ') : LV[1]);
     }
-    addRow(dl, 'Tempo', `${s.bpm} BPM, ${subTxt}`);
+    addRow(dl, 'Tempo', stair ? `${a.steps[0].bpm} → ${a.reached} ${unit}` : `${s.bpm} ${unit}`);
+    addRow(dl, 'Takt und Noten', `${mi.label} · ${subTxt}`);
+    if (silentMode) {
+      const P = a.phase, rel = (m) => s.calibrated ? `Tendenz ${signed(m)} ms` : null;
+      addRow(dl, 'Mit Klick', [rel(P.on.mean), P.on.sd != null ? `±${r0(P.on.sd)} ms` : '–'].filter(Boolean).join(', '));
+      addRow(dl, 'Ohne Klick', [s.calibrated ? rel(P.off.mean) : (P.offShift != null ? `${signed(P.offShift)} ms zu „mit Klick“` : null), P.off.sd != null ? `±${r0(P.off.sd)} ms` : '–'].filter(Boolean).join(', '));
+      if (P.shift != null) addRow(dl, 'Ende der stillen Takte', `${signed(P.shift)} ms (${P.shift < -5 ? 'zu früh' : P.shift > 5 ? 'zu spät' : 'genau'})`);
+    }
+    if (stair) {
+      addRow(dl, 'Höchstes sauberes Tempo', a.bestClean != null ? `${a.bestClean} ${unit}` : 'noch keins');
+      a.steps.slice(0, 16).forEach(st => addRow(dl, `${st.bpm} ${unit}` + (st.passes.length > 1 ? ` (${st.passes.length}×)` : ''), st.n ? `±${r0(st.rsd)} ms${st.clean ? ' · sauber' : ''}` : 'keine Schläge'));
+    }
     addRow(dl, 'Gewertete Schläge', `${a.n} in ${mmss(a.duration)}`);
     addRow(dl, 'Tendenz', a.bias != null ? `${signed(a.bias)} ms (${Math.abs(a.bias) <= 5 ? 'auf dem Klick' : a.bias > 0 ? 'eher spät' : 'eher früh'})` : 'erst nach Latenz-Messung');
     addRow(dl, 'Streuung', `±${r0(a.spread)} ms`);
@@ -2394,7 +2768,8 @@ function analyzeFree3(onsets, opts) {
     }
     if (a.handA != null) addRow(dl, 'Hände bei R-L-Wechsel', s.calibrated ? `Hand auf der 1: ${signed(a.handA)}, andere: ${signed(a.handB)} ms` : `${r0(Math.abs(a.handA - a.handB))} ms Unterschied`);
     const total = a.n + a.unmatched + a.extra;
-    if (a.unmatched / total > 0.15) addNote(`${a.unmatched} Schläge lagen zwischen den Rasterpunkten.` + (s.subMode ? ` Passt „Du spielst: ${SUB_NAMES[s.subMode]}“? Mit „Auto“ erkennt die App den Notenwert selbst.` : ''));
+    if (a.unmatched / total > 0.15) addNote(`${a.unmatched} Schläge lagen zwischen den Rasterpunkten.` + (s.subMode ? ` Passt „Du spielst: ${subName(s.subMode, mi.den)}“? Mit „Auto“ erkennt die App den Notenwert selbst.` : ''));
+    if (stair) addNote('„Sauber“ heißt: Streuung im Durchgang höchstens ±15 ms, und mindestens jede zweite Zählzeit gespielt. Gemessen wird die Streuung robust, einzelne Ausreißer zählen kaum.');
     if (a.extra / total > 0.05) addNote(`${a.extra} Schläge landeten doppelt auf demselben Rasterpunkt (Flams, Prellen oder Nebengeräusche).`);
     if (!s.calibrated) addNote('Ohne Latenz-Messung stimmen Streuung und Drift, aber nicht, ob du vor oder hinter dem Klick liegst.');
     // heatmap + distribution
@@ -2408,7 +2783,11 @@ function analyzeFree3(onsets, opts) {
       $('heatGrids').textContent = '';
     }
     renderDist(a.hist, s.calibrated ? a.bias : null, a.within10, a.within, s.calibrated ? null : 'deinem eigenen Mittel');
-    return { d: s.started, m: 'c', bpm: s.bpm, sub: s.subMode, n: a.n, cal: s.calibrated, bias: a.bias, sp: a.spread, dr: drift, dur: a.duration };
+    const e = { d: s.started, m: 'c', bpm: s.bpm, sub: s.subMode, n: a.n, cal: s.calibrated, bias: a.bias, sp: a.spread, dr: drift, dur: a.duration };
+    if (mi.id !== '4/4') e.ts = mi.id;
+    if (stair) Object.assign(e, { pm: 't', b1: a.reached, bc: a.bestClean });
+    if (silentMode) Object.assign(e, { pm: 's', sh: a.phase.shift != null ? Math.round(a.phase.shift) : null });
+    return e;
   }
 
   function tempoRefs(r, s) {
@@ -2519,7 +2898,7 @@ function analyzeFree3(onsets, opts) {
     const list = $('histList'); list.textContent = '';
     const h = histGet();
     $('histClear').hidden = !h.length;
-    $('histClear').textContent = 'Verlauf löschen'; $('histClear').dataset.armed = '';
+    $('histClear').textContent = 'Verlauf löschen'; $('histClear').dataset.armed = ''; $('histClear').classList.remove('armed');
     $('histHelp').hidden = !h.some(e => e.full);
     if (!h.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Noch keine Übungen gespeichert.'; list.append(p); return; }
     h.forEach(e => {
@@ -2529,9 +2908,18 @@ function analyzeFree3(onsets, opts) {
       date.textContent = fmtDate(e.d) + (e.dur ? ', ' + mmss(e.dur) : '');
       const line = document.createElement('span'); line.className = 'hist-line';
       if (e.m === 'c') {
-        let t = `${e.bpm} BPM ${SUB_NAMES[e.sub] || ''}: Streuung ±${r0(e.sp)} ms`;
-        if (e.cal && e.bias != null) t += `, Tendenz ${signed(e.bias)} ms`;
-        if (e.dr != null && Math.abs(e.dr) >= 8) t += e.dr < 0 ? ', eilt' : ', schleppt';
+        const mi = meterOf(e.ts || '4/4'), unit = unitOf(mi.den);
+        let t = e.pm === 't' ? `Treppe ${e.bpm}→${e.b1 != null ? e.b1 : '?'} ${unit}` : `${e.bpm} ${unit}`;
+        if (e.ts) t += ` · ${mi.label}`;
+        t += ` · ${subName(e.sub, mi.den)}`;
+        if (e.pm === 's') t += ' · Stille Takte';
+        t += `: Streuung ±${r0(e.sp)} ms`;
+        if (e.pm === 't') t += e.bc != null ? `, sauber bis ${e.bc}` : ', noch keine Stufe sauber';
+        else if (e.pm === 's' && e.sh != null) t += `, ohne Klick ${signed(e.sh)} ms`;
+        else {
+          if (e.cal && e.bias != null) t += `, Tendenz ${signed(e.bias)} ms`;
+          if (e.dr != null && Math.abs(e.dr) >= 8) t += e.dr < 0 ? ', eilt' : ', schleppt';
+        }
         line.textContent = t;
       } else {
         let t;
@@ -2541,6 +2929,7 @@ function analyzeFree3(onsets, opts) {
         if (e.tg) t += `, Ziel ${e.tg}`;
         line.textContent = t;
       }
+      if (e.name) { const nm = document.createElement('span'); nm.className = 'hist-name'; nm.textContent = e.name; item.append(nm); }
       item.append(date, line);
       if (e.full) {
         item.type = 'button'; item.disabled = locked();
@@ -2554,7 +2943,7 @@ function analyzeFree3(onsets, opts) {
   }
   $('histClear').addEventListener('click', () => {
     const b = $('histClear');
-    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen: Verlauf und alle Aufnahmen löschen'; return; }
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Nochmal tippen: alles löschen'; return; }
     DB.clear().catch(() => {});
     if (currentRec && phase !== 'session') setEvalState('empty');
     currentRec = null; histMsg('');
@@ -2563,7 +2952,7 @@ function analyzeFree3(onsets, opts) {
   $('recDelete').addEventListener('click', () => {
     const b = $('recDelete');
     if (!currentRec || locked()) return;
-    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Nochmal tippen zum Löschen'; return; }
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Nochmal tippen zum Löschen'; return; }
     const d = currentRec.started;
     DB.del(d).catch(() => {});
     currentRec = null; lastResult = null;
@@ -2578,17 +2967,21 @@ function analyzeFree3(onsets, opts) {
     const r = currentRec; if (!r) return;
     const r5 = (v) => Math.round(v * 1e5) / 1e5, p4 = (v) => Number(v.toPrecision(4));
     const rec = r.mode === 'click'
-      ? { mode: 'click', started: r.started, bpm: r.bpm, subMode: r.subMode, calibrated: r.calibrated, latency: r.latency, output: r.output, ci: r.ci || 4, xs: Array.from(r.xs, r5) }
+      ? Object.assign({ mode: 'click', started: r.started, bpm: r.bpm, subMode: r.subMode, calibrated: r.calibrated, latency: r.latency, output: r.output, ci: r.ci || 4, xs: Array.from(r.xs, r5) },
+        r.beats ? { meter: r.meter, perBar: r.perBar, practice: r.practice, cfgBeat: r.cfgBeat, popt: r.popt, beats: Array.from(r.beats, r5),
+          silent: r.silent ? Array.from(r.silent) : null, pass: r.pass ? Array.from(r.pass) : null, passBpm: r.passBpm || null, passClean: r.passClean || null } : {})
       : { mode: 'free', started: r.started, target: r.target, scale: r.scale || 1, fT: Array.from(r.fT, r5), fP: Array.from(r.fP, p4), fS: Array.from(r.fS, p4) };
-    const json = JSON.stringify({ app: 'drum-timing-trainer', format: 1, exported: new Date().toISOString(), rec });
+    if (r.name) rec.name = r.name;
+    const json = JSON.stringify({ app: 'drum-timing-trainer', format: r.beats ? 2 : 1, exported: new Date().toISOString(), rec });
     const d = new Date(r.started), two = (n) => String(n).padStart(2, '0');
-    const name = `drum-${r.mode === 'click' ? 'klick' : 'frei'}-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}.json`;
+    const slug = r.name ? '-' + r.name.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) : '';
+    const name = `drum-${r.mode === 'click' ? 'klick' : 'frei'}${slug}-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}.json`;
     try {
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
       const a = document.createElement('a'); a.href = url; a.download = name; a.hidden = true;
       document.body.append(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      recMsg(`Die Datei „${name}“ wird heruntergeladen. Öffnen kannst du sie später im Verlauf mit „Aufnahme-Datei öffnen“.`);
+      recMsg(`Die Datei „${name}“ wird heruntergeladen. Öffnen kannst du sie später im Verlauf mit „Datei öffnen“.`);
     } catch (e) { recMsg('Der Export hat in diesem Browser nicht geklappt.'); }
   });
   function recFromExport(o) {
@@ -2598,19 +2991,44 @@ function analyzeFree3(onsets, opts) {
     const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
     const arr = (a, lo, hi) => { if (!Array.isArray(a) || a.length > 400000) bad(); for (let i = 0; i < a.length; i++) if (!num(a[i], lo, hi)) bad(); return a; };
     if (!num(r.started, 0, 1e14)) bad();
+    const nameOf = (v) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60) : '';
     if (r.mode === 'click') {
       if (!num(r.bpm, 30, 300) || ![0, 1, 2, 3, 4].includes(r.subMode)) bad();
       const xs = arr(r.xs, -60, 86400).slice().sort((a, b) => a - b);
-      return { v: 1, mode: 'click', started: r.started, bpm: Math.round(r.bpm), subMode: r.subMode, calibrated: r.calibrated === true,
+      const out = { v: 1, mode: 'click', started: r.started, bpm: Math.round(r.bpm), subMode: r.subMode, calibrated: r.calibrated === true,
         latency: num(r.latency, 0, 2) ? r.latency : 0, output: r.output === 'speaker' ? 'speaker' : 'headphones', ci: 4, xs: Float64Array.from(xs) };
+      if (Array.isArray(r.beats)) {
+        const beats = arr(r.beats, -1, 86400);
+        for (let i = 1; i < beats.length; i++) if (!(beats[i] > beats[i - 1])) bad();
+        if (beats.length < 2) bad();
+        const mi = meterOf(r.meter), nB = beats.length;
+        const flags = (a, lo, hi) => { if (a == null) return null; const v = arr(a, lo, hi); if (v.length !== nB) bad(); return v; };
+        const silent = flags(r.silent, 0, 1), pass = flags(r.pass, 0, 30000);
+        let passBpm = null, passClean = null;
+        if (pass) {
+          passBpm = arr(r.passBpm || [], 20, 400);
+          if (pass.some(p => p >= passBpm.length)) bad();
+          passClean = Array.isArray(r.passClean) ? r.passClean.slice(0, passBpm.length).map(v => v === true ? true : v === false ? false : null) : null;
+        }
+        const po = r.popt && typeof r.popt === 'object' ? r.popt : {};
+        Object.assign(out, { v: 2, ci: num(r.ci, 0, 64) ? Math.round(r.ci) : mi.n, meter: mi.id, perBar: mi.n,
+          practice: ['normal', 'silent', 'stair'].includes(r.practice) ? r.practice : 'normal',
+          cfgBeat: num(r.cfgBeat, 0.05, 5) ? r.cfgBeat : null,
+          popt: { silOn: clampInt(po.silOn, 1, 4, 2), silOff: clampInt(po.silOff, 1, 4, 2), stStep: clampInt(po.stStep, 1, 10, 5), stBars: clampInt(po.stBars, 2, 8, 4), stMax: clampInt(po.stMax, 31, 300, 160), stClean: po.stClean !== false },
+          beats: Float64Array.from(beats), silent: silent ? Uint8Array.from(silent) : null, pass: pass ? Int16Array.from(pass) : null, passBpm, passClean });
+      }
+      const nm = nameOf(r.name); if (nm) out.name = nm;
+      return out;
     }
     if (r.mode === 'free') {
       const fT = arr(r.fT, -1, 86400), fP = arr(r.fP, 0, 1000), fS = arr(r.fS, 0, 1000);
       if (fP.length !== fT.length || fS.length !== fT.length) bad();
       const idx = fT.map((t, i) => i).sort((a, b) => fT[a] - fT[b]);
-      return { v: 1, mode: 'free', started: r.started, target: num(r.target, 30, 300) ? Math.round(r.target) : null,
+      const out = { v: 1, mode: 'free', started: r.started, target: num(r.target, 30, 300) ? Math.round(r.target) : null,
         scale: [0.25, 0.5, 1, 2, 4].includes(r.scale) ? r.scale : 1,
         fT: Float64Array.from(idx, i => fT[i]), fP: Float32Array.from(idx, i => fP[i]), fS: Float32Array.from(idx, i => fS[i]) };
+      const nm = nameOf(r.name); if (nm) out.name = nm;
+      return out;
     }
     return bad();
   }
@@ -2738,6 +3156,31 @@ function analyzeFree3(onsets, opts) {
     if (mqDark.addEventListener) mqDark.addEventListener('change', onMq); else if (mqDark.addListener) mqDark.addListener(onMq);
   }
   function redrawAll() { TL.draw(); drawChart(); drawDist(); }
+
+  // ---------- offline app ----------
+  let installEvt = null;
+  const standalone = () => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  function renderInstall(swOk) {
+    const info = $('installInfo'), btn = $('installBtn');
+    btn.hidden = !installEvt;
+    if (standalone()) info.textContent = 'Läuft als App. Nach dem ersten Öffnen geht das auch ohne Internet; mit Internet holt sie sich beim Start die neueste Version.';
+    else if (installEvt) info.textContent = 'Mit Symbol auf dem Startbildschirm, und nach dem ersten Öffnen auch ohne Internet.';
+    else if (swOk === false) info.textContent = 'Die App-Version braucht neben index.html auch die Dateien sw.js, manifest.webmanifest, icon-192.png und icon-512.png im selben Ordner.';
+    else info.textContent = 'Mit Symbol auf dem Startbildschirm, und nach dem ersten Öffnen auch ohne Internet. Erscheint hier kein Knopf: im Chrome-Menü (⋮) „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.';
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; renderInstall(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; renderInstall(); });
+  $('installBtn').addEventListener('click', async () => {
+    const e = installEvt; if (!e) return;
+    installEvt = null;
+    try { e.prompt(); await e.userChoice; } catch (err) { /* ignore */ }
+    renderInstall();
+  });
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(() => renderInstall(true)).catch(() => renderInstall(false));
+    });
+  } else renderInstall(false);
 
   // ---------- init ----------
   try { history.scrollRestoration = 'manual'; } catch (e) { /* ignore */ }
