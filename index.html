@@ -264,6 +264,20 @@ button.sl-row.sel .sl-t { color: var(--accent); }
 .sl-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .sl-tools .push { margin-left: auto; }
 .sl-ins { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.sl-grip { display: grid; place-items: center; width: 40px; height: 40px; margin: -6px -6px -6px 0; color: var(--muted); touch-action: none; cursor: grab; border-radius: 8px; }
+.sl-grip svg { width: 22px; height: 22px; fill: currentColor; }
+.sl-grip:active { background: var(--accent-soft); color: var(--accent); }
+.editing button.sl-row { grid-template-columns: 1fr auto 40px; align-items: center; }
+.editing button.sl-row > .sl-grip { grid-column: 3; grid-row: 1 / span 2; }
+.editing .sl-a, .editing .sl-r { grid-column: 1 / 3; }
+.editing button.sl-row.sep { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+.editing button.sl-row.sep > .sl-pause, .editing button.sl-row.sep > .sl-set { flex: 1; margin: 0; }
+button.sl-row.sl-dragging { position: relative; z-index: 6; background: var(--panel); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.28); outline: 2px solid var(--accent); outline-offset: -1px; }
+button.sl-row.drop-before { box-shadow: inset 0 4px 0 var(--accent); }
+button.sl-row.drop-after { box-shadow: inset 0 -4px 0 var(--accent); }
+body.sl-dragmode { -webkit-user-select: none; user-select: none; cursor: grabbing; }
+body.sl-dragmode .sl-grip { cursor: grabbing; }
+.song-chip .sc-nav { min-width: 36px; padding: 0 6px; font-size: 20px; line-height: 1; }
 .song-chip { display: flex; align-items: center; gap: 8px; margin: -4px 0 8px; padding: 2px 2px 2px 10px; border-radius: 10px; background: var(--accent-soft); }
 .song-chip .sc-txt { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .song-chip .sc-txt b { color: var(--accent); }
@@ -337,7 +351,8 @@ button.hist-item { position: relative; padding-right: 28px; }
       <div class="song-chip" id="songChip" hidden>
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
         <span class="sc-txt"><b id="scTitle"></b></span>
-        <button type="button" class="btn tiny" id="songNext">Nächster</button>
+        <button type="button" class="btn tiny sc-nav" id="songPrev" aria-label="Vorheriger Song">‹</button>
+        <button type="button" class="btn tiny sc-nav" id="songNext" aria-label="Nächster Song">›</button>
         <button type="button" class="icon-btn" id="songClear" aria-label="Song abwählen">×</button>
       </div>
       <div class="field">
@@ -514,15 +529,18 @@ button.hist-item { position: relative; padding-right: 28px; }
           <button type="button" class="btn small push" id="slPasteBtn">Liste einfügen</button>
         </div>
         <div id="slPasteBox" hidden>
-          <p class="help">In deiner Tabelle die Zeilen markieren, kopieren und hier einfügen – Spalten: Interpret, Titel, BPM, Dauer (Minuten). Zeilen mit „Pause“ werden Pausen. Die jetzige Liste wird dabei ersetzt.</p>
+          <p class="help">In deiner Tabelle die Zeilen markieren, kopieren und hier einfügen – Spalten: Interpret, Titel, BPM, Dauer (Minuten). Zeilen mit „Pause“ werden Pausen. Oder eine exportierte Setlist mit „Datei öffnen“ laden. Die jetzige Liste wird dabei ersetzt.</p>
           <textarea id="slPaste" rows="6" spellcheck="false" aria-label="Liste einfügen"></textarea>
           <div class="sl-tools">
             <button type="button" class="btn small fill" id="slPasteOk">Liste ersetzen</button>
             <button type="button" class="btn small" id="slPasteCancel">Abbrechen</button>
+            <button type="button" class="btn small push" id="slFileBtn">Datei öffnen</button>
           </div>
+          <input type="file" id="slFile" accept=".csv,.txt,text/csv,text/plain" hidden>
         </div>
         <div class="sl-tools"><button type="button" class="btn small danger push" id="slClear">Setlist leeren</button></div>
       </div>
+      <div class="sl-tools" id="slViewTools"><button type="button" class="btn small" id="slExport">Als Datei exportieren</button></div>
       <p class="help" id="slMsg" role="status" hidden></p>
     </section>
   </section>
@@ -565,7 +583,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.3<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.4<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -647,10 +665,10 @@ button.hist-item { position: relative; padding-right: 28px; }
       <h2>5. Setlist</h2>
       <ul>
         <li>Im Reiter <b>Setlist</b> stehen eure Songs mit Tempo und Dauer, aufgeteilt in Sets. Für jedes Set siehst du, wie viele Songs es hat und wie lange es dauert.</li>
-        <li>Tippst du auf einen Song, übernimmt die App sein Tempo – beim freien Spielen als Zieltempo, mit Klick als Klicktempo – und die Aufnahme bekommt den Songnamen. Oben in der Aufnahme steht der gewählte Song, <b>Nächster</b> springt zum nächsten Song der Liste.</li>
+        <li>Tippst du auf einen Song, übernimmt die App sein Tempo – beim freien Spielen als Zieltempo, mit Klick als Klicktempo – und die Aufnahme bekommt den Songnamen. Oben in der Aufnahme steht der gewählte Song, mit <b>‹</b> und <b>›</b> springst du zum vorherigen oder nächsten Song der Liste.</li>
         <li>Unter jedem Song steht, wie oft er aufgenommen wurde und das letzte Ergebnis.</li>
-        <li>Mit <b>Bearbeiten</b> änderst, verschiebst und löschst du Songs und fügst Songs oder Pausen ein. Eine Pause trennt zwei Sets. Gibst du ihr einen Namen (etwa „Zugabe“), wird daraus ein eigener Abschnitt.</li>
-        <li><b>Liste einfügen</b>: In deiner Tabelle die Zeilen markieren, kopieren und einfügen (Interpret, Titel, BPM, Dauer). Zeilen mit „Pause“ werden Pausen.</li>
+        <li>Mit <b>Bearbeiten</b> erscheint rechts an jeder Zeile ein Griff (⠿). Daran ziehst du Songs und Pausen an ihre neue Stelle. Antippen einer Zeile öffnet sie zum Ändern oder Löschen, dort fügst du auch Songs oder Pausen ein. Eine Pause trennt zwei Sets. Gibst du ihr einen Namen (etwa „Zugabe“), wird daraus eine eigene Überschrift, deren Songs nicht zu den Sets zählen.</li>
+        <li><b>Als Datei exportieren</b> speichert die Setlist als Tabelle (CSV), die Excel öffnen kann. Zurück in die App kommt sie unter Bearbeiten → <b>Liste einfügen</b>: entweder die Datei öffnen oder Zeilen aus deiner Tabelle kopieren und einfügen (Interpret, Titel, BPM, Dauer). Zeilen mit „Pause“ werden Pausen.</li>
       </ul>
     </section>
 
@@ -1642,7 +1660,7 @@ function analyzeFree3(onsets, opts) {
     const btn = $('startBtn');
     btn.textContent = running ? 'Stop' : 'Start';
     btn.classList.toggle('danger', running);
-    document.querySelectorAll('[data-mode],[data-ftarget],[data-practice],#stCleanBtn,#meterSel,#subSel,[data-output],#silOn,#silOff,#stStep,#stBars,#stMax,#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport,#songNext,#songClear,#slEditBtn')
+    document.querySelectorAll('[data-mode],[data-ftarget],[data-practice],#stCleanBtn,#meterSel,#subSel,[data-output],#silOn,#silOff,#stStep,#stBars,#stMax,#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport,#songPrev,#songNext,#songClear,#slEditBtn')
       .forEach(el => { el.disabled = running; });
     renderRunState();
     renderSongChip();
@@ -3226,14 +3244,21 @@ function analyzeFree3(onsets, opts) {
     $('slEditBtn').disabled = busyNow;
     $('slTools').hidden = !slEditing;
     $('slHelp').hidden = !setlist.length;
-    $('slHelp').textContent = slEditing ? 'Tippe auf einen Song oder eine Pause, um sie zu ändern, zu verschieben oder zu löschen.' : 'Tippe auf einen Song: Die App übernimmt sein Tempo und benennt die Aufnahme danach.';
+    $('slHelp').textContent = slEditing ? 'Zum Verschieben am Griff ⠿ ziehen. Antippen öffnet eine Zeile zum Ändern oder Löschen.' : 'Tippe auf einen Song: Die App übernimmt sein Tempo und benennt die Aufnahme danach.';
+    $('slViewTools').hidden = slEditing || !setlist.some(x => x.t === 's');
     // groups: songs up to the next pause
     const groups = [{ sep: null, items: [] }];
     setlist.forEach(x => { if (x.t === 'p') groups.push({ sep: x, items: [] }); else groups[groups.length - 1].items.push(x); });
-    const songs = setlist.filter(x => x.t === 's'), total = songs.reduce((a, x) => a + (x.dur || 0), 0);
-    const nSets = groups.filter(g => g.items.length && !(g.sep && g.sep.label)).length;
-    $('slSum').textContent = songs.length ? `${songs.length} Songs` + (nSets > 1 ? ` in ${nSets} Sets` : '') + (total ? ` · ${fmtTotal(total)}` : '') : '';
-    $('slSum').hidden = !songs.length;
+    // overview: songs in the sets (what you play at a gig) and songs under other headings, counted separately
+    const isSet = (g) => !(g.sep && g.sep.label), cnt = (n) => `${n} ${n === 1 ? 'Song' : 'Songs'}`;
+    const sets = groups.filter(g => isSet(g) && g.items.length), extra = groups.filter(g => !isSet(g) && g.items.length);
+    const setSongs = sets.reduce((a, g) => a + g.items.length, 0), extraN = extra.reduce((a, g) => a + g.items.length, 0);
+    const setDur = sets.reduce((a, g) => a + g.items.reduce((b, x) => b + (x.dur || 0), 0), 0);
+    let sum = setSongs ? (sets.length > 1 ? `${sets.length} Sets · ` : '') + cnt(setSongs) + (setDur ? ` · ${fmtTotal(setDur)}` : '') : '';
+    if (extraN) sum += (sum ? ', dazu ' : '') + cnt(extraN) + ' unter ' + (extra.length === 1 ? `„${extra[0].sep.label}“` : 'weiteren Überschriften');
+    $('slSum').textContent = sum;
+    $('slSum').hidden = !sum;
+    list.classList.toggle('editing', slEditing);
     if (!setlist.length) { list.append(el('p', 'empty', slEditing ? 'Die Liste ist leer. Füge Songs hinzu oder füge deine Liste ein.' : 'Noch keine Songs. Tippe auf „Bearbeiten“, um Songs einzutragen.')); return; }
     const stats = songStats(), sel = settings.songId;
     let setNo = 0, pauseNo = 0;
@@ -3242,18 +3267,16 @@ function analyzeFree3(onsets, opts) {
       const named = !!(g.sep && g.sep.label);
       if (g.sep && !named) {
         pauseNo++;
-        const row = el(slEditing ? 'button' : 'div', slEditing ? 'sl-row sep' : '');
         const d = el('div', 'sl-pause', `Pause ${pauseNo}`);
-        if (slEditing) { row.type = 'button'; row.dataset.id = g.sep.id; row.append(d); list.append(row); } else list.append(d);
+        if (slEditing) { const row = el('button', 'sl-row sep'); row.type = 'button'; row.dataset.id = g.sep.id; row.dataset.drag = '1'; row.append(d, grip()); list.append(row); } else list.append(d);
         addEditor(g.sep);
       }
       if (!g.items.length && !named && g.sep) return;
       if (!named) setNo++;
       const dur = g.items.reduce((a, x) => a + (x.dur || 0), 0);
-      const head = el(named && slEditing ? 'button' : 'div', named && slEditing ? 'sl-row sep' : '');
       const h = el('div', 'sl-set', named ? g.sep.label : `Set ${setNo}`);
-      h.append(el('span', '', `${g.items.length} ${g.items.length === 1 ? 'Song' : 'Songs'}` + (dur ? ` · ${fmtTotal(dur)}` : '')));
-      if (named && slEditing) { head.type = 'button'; head.dataset.id = g.sep.id; head.append(h); list.append(head); } else list.append(h);
+      h.append(el('span', '', cnt(g.items.length) + (dur ? ` · ${fmtTotal(dur)}` : '')));
+      if (named && slEditing) { const head = el('button', 'sl-row sep'); head.type = 'button'; head.dataset.id = g.sep.id; head.dataset.drag = '1'; head.append(h, grip()); list.append(head); } else list.append(h);
       if (named) addEditor(g.sep);
       g.items.forEach(x => {
         const b = el('button', 'sl-row' + (x.id === sel ? ' sel' : ''));
@@ -3264,6 +3287,7 @@ function analyzeFree3(onsets, opts) {
         if (sub) b.append(el('span', 'sl-a', sub));
         const st = stats.get(x.id);
         if (st && !slEditing) b.append(el('span', 'sl-r', resultText(st)));
+        if (slEditing) { b.dataset.drag = '1'; b.append(grip()); }
         b.setAttribute('aria-label', slEditing ? `${x.n} bearbeiten` : `${x.n}${x.bpm ? ', ' + x.bpm + ' BPM' : ''} auswählen`);
         list.append(b);
         addEditor(x);
@@ -3288,11 +3312,8 @@ function analyzeFree3(onsets, opts) {
       field('Name – leer lassen für eine Pause zwischen zwei Sets', 'label', item.label, { maxlength: '40', autocomplete: 'off', placeholder: 'Pause' }, true);
     }
     box.append(grid);
-    const i = setlist.indexOf(item);
     const tools = el('div', 'sl-tools');
     const btn = (text, act, cls, label) => { const b = el('button', 'btn small' + (cls ? ' ' + cls : ''), text); b.type = 'button'; b.dataset.act = act; if (label) b.setAttribute('aria-label', label); tools.append(b); return b; };
-    btn('↑', 'up', '', 'nach oben').disabled = i <= 0;
-    btn('↓', 'down', '', 'nach unten').disabled = i >= setlist.length - 1;
     btn('Löschen', 'del', 'danger');
     btn('Fertig', 'done', 'fill push');
     box.append(tools);
@@ -3337,10 +3358,6 @@ function analyzeFree3(onsets, opts) {
       const box = actBtn.closest('.sl-edit'); const i = box ? setlist.findIndex(x => x.id === box.dataset.for) : -1; if (i < 0) return;
       const it = setlist[i], act = actBtn.dataset.act;
       if (act === 'done') { closeEditor(); return; }
-      if (act === 'up' || act === 'down') {
-        const j = act === 'up' ? i - 1 : i + 1; if (j < 0 || j >= setlist.length) return;
-        setlist[i] = setlist[j]; setlist[j] = it; saveSetlist(); openEditor(it.id); return;
-      }
       if (act === 'del') {
         if (!actBtn.dataset.armed) { actBtn.dataset.armed = '1'; actBtn.classList.add('armed'); actBtn.textContent = 'Nochmal tippen'; return; }
         setlist.splice(i, 1);
@@ -3351,11 +3368,83 @@ function analyzeFree3(onsets, opts) {
       if (act === 'addPause') { insertItem({ id: newId(), t: 'p', label: '' }); return; }
       return;
     }
+    if (ev.target.closest('.sl-grip') || slDragJustEnded) return;
     const row = ev.target.closest('button.sl-row'); if (!row || row.disabled) return;
     const id = row.dataset.id;
     if (slEditing) { if (slOpen === id) closeEditor(); else { if (slOpen) { const it = setlist.find(x => x.id === slOpen); if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel'; } openEditor(id); } return; }
     selectSong(id);
   });
+  // ---- moving songs and pauses by dragging the grip ----
+  const GRIP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
+  function grip() { const g = el('span', 'sl-grip'); g.innerHTML = GRIP_SVG; g.title = 'Ziehen zum Verschieben'; return g; }
+  let slDrag = null, slDragJustEnded = false;
+  // target: insert before row j (j = number of rows: at the end); right next to its old place = no change
+  function dragMark(j) {
+    const d = slDrag; if (!d || d.j === j) return;
+    d.j = j;
+    d.rows.forEach(r => r.classList.remove('drop-before', 'drop-after'));
+    if (j == null) return;
+    if (j < d.rows.length) d.rows[j].classList.add('drop-before'); else d.rows[d.rows.length - 1].classList.add('drop-after');
+  }
+  function dragTick() {
+    const d = slDrag; if (!d) return;
+    // scroll the page when the finger is near the top or the bottom
+    const top = document.querySelector('.appbar').getBoundingClientRect().bottom, bottom = document.querySelector('.tabbar').getBoundingClientRect().top;
+    let v = 0;
+    if (d.y < top + 56) v = -Math.min(22, Math.ceil((top + 56 - d.y) / 3));
+    else if (d.y > bottom - 56) v = Math.min(22, Math.ceil((d.y - bottom + 56) / 3));
+    if (v) window.scrollBy(0, v);
+    d.row.style.transform = `translateY(${d.y - d.y0 + window.scrollY - d.s0}px)`;
+    const i = d.rows.indexOf(d.row);
+    let j = d.rows.length;
+    for (let k = 0; k < d.rows.length; k++) {
+      if (k === i) continue;
+      const b = d.rows[k].getBoundingClientRect();
+      if (d.y < b.top + b.height / 2) { j = k; break; }
+    }
+    dragMark(j === i || j === i + 1 ? null : j);
+    d.raf = requestAnimationFrame(dragTick);
+  }
+  function dragStart(ev) {
+    if (!slEditing || slDrag || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
+    const g = ev.target.closest('.sl-grip'); if (!g) return;
+    ev.preventDefault();
+    let id = g.closest('[data-id]').dataset.id;
+    if (slOpen) {                                   // close an open editor first, the list is drawn again
+      const it = setlist.find(x => x.id === slOpen); if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel';
+      slOpen = null; saveSetlist(); renderSetlist();
+    }
+    const row = $('slList').querySelector(`[data-drag][data-id="${id}"]`); if (!row) return;
+    const handle = row.querySelector('.sl-grip');
+    slDrag = { id, row, pid: ev.pointerId, y: ev.clientY, y0: ev.clientY, s0: window.scrollY, rows: Array.from($('slList').querySelectorAll('[data-drag]')), j: null, raf: 0 };
+    row.classList.add('sl-dragging');
+    document.body.classList.add('sl-dragmode');
+    try { handle.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+    slDrag.raf = requestAnimationFrame(dragTick);
+  }
+  function dragMove(ev) { if (slDrag && ev.pointerId === slDrag.pid) { slDrag.y = ev.clientY; if (Math.abs(ev.clientY - slDrag.y0) > 4) slDrag.moved = true; ev.preventDefault(); } }
+  function dragEnd(ev) {
+    const d = slDrag; if (!d || (ev && ev.pointerId !== d.pid)) return;
+    slDrag = null;
+    cancelAnimationFrame(d.raf);
+    document.body.classList.remove('sl-dragmode');
+    const cancel = ev && ev.type === 'pointercancel';
+    if (!cancel && d.j != null) {
+      const item = setlist.find(x => x.id === d.id), rest = setlist.filter(x => x.id !== d.id);
+      let at = d.j < d.rows.length ? rest.findIndex(x => x.id === d.rows[d.j].dataset.id) : rest.length;
+      if (at < 0) at = rest.length;
+      rest.splice(at, 0, item);
+      if (rest.some((x, k) => x !== setlist[k])) { setlist = rest; saveSetlist(); }
+    }
+    if (d.moved) { slDragJustEnded = true; setTimeout(() => { slDragJustEnded = false; }, 120); }   // the click after a real drag opens nothing
+    renderSetlist();
+  }
+  $('slList').addEventListener('pointerdown', dragStart);
+  $('slList').addEventListener('pointermove', dragMove);
+  $('slList').addEventListener('pointerup', dragEnd);
+  $('slList').addEventListener('pointercancel', dragEnd);
+  $('slList').addEventListener('lostpointercapture', (ev) => { if (slDrag && ev.pointerId === slDrag.pid) dragEnd(ev); });
+
   $('slEditBtn').addEventListener('click', () => {
     if (slEditing) { const it = setlist.find(x => x.id === slOpen); if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel'; saveSetlist(); }
     slEditing = !slEditing; slOpen = null; slMsg(''); $('slPasteBox').hidden = true; resetArm($('slClear'), 'Setlist leeren');
@@ -3374,19 +3463,35 @@ function analyzeFree3(onsets, opts) {
     slMsg('Die Setlist ist jetzt leer.'); renderSetlist();
   });
   // paste rows copied from a spreadsheet: artist, title, BPM, minutes; rows saying "Pause" become pauses
+  function splitRow(line, sep) {            // one line of CSV/TSV; cells may be in quotes, doubled quotes inside
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"' && !cur.trim()) { q = true; cur = ''; }
+      else if (c === sep) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out;
+  }
   function parseSetlistText(text) {
     const out = [];
-    String(text || '').split(/\r?\n/).forEach(raw => {
-      const line = raw.replace(/ /g, ' ');
+    String(text || '').replace(/^\ufeff/, '').split(/\r?\n/).forEach(raw => {
+      const line = raw.replace(/\u00a0/g, ' ');
       if (!line.trim()) return;
-      let cells = line.includes('\t') ? line.split('\t') : line.includes(';') ? line.split(';') : [line];
-      cells = cells.map(c => c.trim().replace(/^"(.*)"$/, '$1').trim());
+      let cells = line.includes('\t') ? splitRow(line, '\t') : line.includes(';') ? splitRow(line, ';') : [line];
+      cells = cells.map(c => c.trim());
       while (cells.length && !cells[cells.length - 1]) cells.pop();
       const filled = cells.filter(Boolean);
       if (!filled.length) return;
       const low = filled.map(c => c.toLowerCase());
       if (low.includes('titel') && (low.includes('interpret') || low.includes('bpm'))) return;        // header row
-      if (filled.length === 1 && /^pause\b/i.test(filled[0])) { out.push({ id: newId(), t: 'p', label: /^pause\s*\d*\s*$/i.test(filled[0]) ? '' : cleanText(filled[0], 40) }); return; }
+      if (filled.length === 1 && /^pause\b/i.test(filled[0])) {
+        const named = filled[0].match(/^pause\s*[:\-–]\s*(.+)$/i);          // "Pause: Zugabe" = a heading
+        out.push({ id: newId(), t: 'p', label: named ? cleanText(named[1], 40) : /^pause\s*\d*\s*$/i.test(filled[0]) ? '' : cleanText(filled[0], 40) });
+        return;
+      }
       let a = '', n = '', bpm = null, dur = null;
       if (cells.length === 1) {
         const m = cells[0].match(/^(.+?)\s+[-–]\s+(.+)$/);
@@ -3423,6 +3528,41 @@ function analyzeFree3(onsets, opts) {
     slMsg(`Liste übernommen: ${nSongs} Songs` + (nP ? `, ${nP} ${nP === 1 ? 'Pause' : 'Pausen'}` : '') + '.');
     renderSetlist();
   });
+  function setlistCsv() {
+    const q = (v) => { const t = v == null ? '' : String(v); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const rows = ['Interpret;Titel;BPM;Dauer'];
+    let pauseNo = 0;
+    setlist.forEach(x => {
+      if (x.t === 'p') rows.push(';' + q(x.label ? `Pause: ${x.label}` : `Pause ${++pauseNo}`) + ';;');
+      else rows.push([q(x.a), q(x.n), x.bpm || '', x.dur != null ? fmtMin(x.dur) : ''].join(';'));
+    });
+    return '\ufeff' + rows.join('\r\n') + '\r\n';
+  }
+  $('slExport').addEventListener('click', () => {
+    const d = new Date(), two = (n) => String(n).padStart(2, '0');
+    const name = `setlist-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}.csv`;
+    try {
+      const url = URL.createObjectURL(new Blob([setlistCsv()], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a'); a.href = url; a.download = name; a.hidden = true;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      slMsg(`Die Datei „${name}“ wird heruntergeladen. Excel kann sie öffnen; zurück in die App kommt sie unter Bearbeiten → Liste einfügen.`);
+    } catch (e) { slMsg('Die Setlist konnte nicht als Datei gespeichert werden.'); }
+  });
+  $('slFileBtn').addEventListener('click', () => { $('slFile').value = ''; $('slFile').click(); });
+  $('slFile').addEventListener('change', () => {
+    const f = $('slFile').files && $('slFile').files[0]; if (!f) return;
+    if (f.size > 500000) { slMsg('Diese Datei ist zu groß für eine Setlist.'); return; }
+    const rd = new FileReader();
+    rd.onload = () => {
+      $('slPaste').value = String(rd.result || '');
+      resetArm($('slPasteOk'), 'Liste ersetzen');
+      const n = parseSetlistText($('slPaste').value).filter(x => x.t === 's').length;
+      slMsg(n ? `${n} Songs in der Datei gefunden. Tippe auf „Liste ersetzen“, um sie zu übernehmen.` : 'In dieser Datei wurden keine Songs gefunden.');
+    };
+    rd.onerror = () => slMsg('Die Datei konnte nicht gelesen werden.');
+    rd.readAsText(f);
+  });
   // choosing a song: its tempo becomes the target (free) or click tempo, the recording gets its name
   function selectSong(id) {
     const song = setlist.find(x => x.t === 's' && x.id === id);
@@ -3434,9 +3574,9 @@ function analyzeFree3(onsets, opts) {
     renderSetup(); renderSetlist();
     if (currentTab !== 'rec') showTab('rec', { top: true });
   }
-  function nextSongOf(id) {
+  function nextSongOf(id, dir) {
     const i = setlist.findIndex(x => x.id === id);
-    for (let j = i + 1; j < setlist.length; j++) if (setlist[j].t === 's') return setlist[j];
+    for (let j = i + (dir || 1); j >= 0 && j < setlist.length; j += dir || 1) if (setlist[j].t === 's') return setlist[j];
     return null;
   }
   function renderSongChip() {
@@ -3446,12 +3586,15 @@ function analyzeFree3(onsets, opts) {
     if (!song) return;
     $('scTitle').textContent = song.n;
     chip.title = [song.n, song.a, song.bpm ? song.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
-    const nx = nextSongOf(song.id), busyNow = setupLocked();
+    const nx = nextSongOf(song.id, 1), pv = nextSongOf(song.id, -1), busyNow = setupLocked();
     $('songNext').disabled = !nx || busyNow;
     $('songNext').setAttribute('aria-label', nx ? `Nächster Song: ${nx.n}` : 'Kein weiterer Song');
+    $('songPrev').disabled = !pv || busyNow;
+    $('songPrev').setAttribute('aria-label', pv ? `Vorheriger Song: ${pv.n}` : 'Kein vorheriger Song');
     $('songClear').disabled = busyNow;
   }
-  $('songNext').addEventListener('click', () => { const s = currentSong(); const nx = s && nextSongOf(s.id); if (nx) selectSong(nx.id); });
+  $('songNext').addEventListener('click', () => { const s = currentSong(); const nx = s && nextSongOf(s.id, 1); if (nx) selectSong(nx.id); });
+  $('songPrev').addEventListener('click', () => { const s = currentSong(); const pv = s && nextSongOf(s.id, -1); if (pv) selectSong(pv.id); });
   $('songClear').addEventListener('click', () => { if (setupLocked()) return; settings.songId = null; saveSettings(); renderSongChip(); renderSetlist(); });
 
   // ---------- export / open file (optional backup, or to look at a recording on another device) ----------
