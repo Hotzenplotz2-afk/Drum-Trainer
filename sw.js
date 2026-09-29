@@ -1,11 +1,12 @@
 // Drum Timing Trainer – offline support.
 // The page itself: network first (so a new upload shows up on the next start), cached copy when offline.
 // Icons and manifest: from the cache.
-const CACHE = 'dtt-v5';
+const CACHE = 'dtt-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' – take the files from the server, not from an older copy in the browser cache
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
@@ -19,7 +20,8 @@ function networkFirst(request, key) {
     const finish = (r) => { if (!done && r) { done = true; resolve(r); } };
     const fromCache = () => caches.match(key).then(finish);
     const timer = setTimeout(fromCache, 4000);          // slow network in the rehearsal room: use the cached copy
-    fetch(request).then((res) => {
+    // no-cache: ask the server every time (cheap if nothing changed), so a new upload shows up at the next start
+    fetch(new Request(request.url, { cache: 'no-cache', credentials: 'same-origin' })).then((res) => {
       clearTimeout(timer);
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
       finish(res);

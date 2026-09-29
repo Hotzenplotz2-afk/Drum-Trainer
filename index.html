@@ -63,9 +63,9 @@ svg.ic { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-wid
 
 /* ---------- bottom tabs ---------- */
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--panel); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
-.tabbar-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h); }
-.tabbar button { position: relative; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 2px 8px; font-size: 11.5px; font-weight: 600; min-width: 0; }
-.tabbar .ti { width: 56px; height: 30px; border-radius: 15px; display: grid; place-items: center; transition: background-color .15s ease; }
+.tabbar-in { max-width: 520px; margin: 0 auto; display: flex; height: var(--nav-h); }
+.tabbar button { position: relative; flex: 1 1 auto; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 2px 8px; font-size: 11px; font-weight: 600; min-width: 0; white-space: nowrap; }
+.tabbar .ti { width: 52px; height: 30px; border-radius: 15px; display: grid; place-items: center; transition: background-color .15s ease; }
 .tabbar button.on { color: var(--text); }
 .tabbar button.on .ti { background: var(--accent-soft); color: var(--accent); }
 .tabbar .tdot { position: absolute; top: 7px; left: calc(50% + 14px); width: 9px; height: 9px; border-radius: 50%; background: var(--bad); border: 2px solid var(--panel); display: none; }
@@ -237,6 +237,40 @@ canvas.dist { display: block; width: 100%; height: 110px; border-radius: 10px; b
 .rec-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 0; }
 
 /* history */
+/* ---------- setlist ---------- */
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.card-head h2 { flex: 1; margin: 0; }
+.sl-sum { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.sl-set { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 2px; font-size: 13px; font-weight: 700; color: var(--accent); }
+.sl-set:first-child { margin-top: 0; }
+.sl-set span { font-weight: 600; color: var(--muted); }
+.sl-pause { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.sl-pause::before, .sl-pause::after { content: ""; flex: 1; border-top: 1px dashed var(--line); }
+button.sl-row { box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; column-gap: 10px; width: 100%; padding: 9px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; text-align: left; font-size: 14px; }
+.sl-set + button.sl-row { border-top: 0; }
+button.sl-row.sep { display: block; border-top: 0; padding: 4px 0; }
+.sl-t { font-weight: 700; overflow-wrap: anywhere; }
+.sl-b { font-weight: 700; white-space: nowrap; text-align: right; }
+.sl-a, .sl-r { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+.sl-r { color: var(--text); }
+button.sl-row.sel { box-shadow: inset 3px 0 0 var(--accent); padding-left: 10px; }
+button.sl-row.sel .sl-t { color: var(--accent); }
+.sl-edit { margin: 2px 0 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.sl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sl-grid label { display: block; min-width: 0; font-size: 12.5px; color: var(--muted); }
+.sl-grid label.wide { grid-column: 1 / -1; }
+.sl-edit input, #slPaste { box-sizing: border-box; display: block; width: 100%; min-height: 38px; margin-top: 3px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); font: inherit; font-size: 14.5px; }
+#slPaste { min-height: 120px; font-size: 13px; resize: vertical; }
+.sl-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.sl-tools .push { margin-left: auto; }
+.sl-ins { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.song-chip { display: flex; align-items: center; gap: 8px; margin: -4px 0 8px; padding: 2px 2px 2px 10px; border-radius: 10px; background: var(--accent-soft); }
+.song-chip .sc-txt { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-chip .sc-txt b { color: var(--accent); }
+.song-chip .sc-sub { color: var(--muted); font-size: 12.5px; }
+.song-chip svg.ic { width: 20px; height: 20px; color: var(--accent); flex: 0 0 auto; }
+.song-chip .icon-btn { width: 32px; height: 32px; font-size: 20px; color: var(--muted); }
+
 .hist-item { box-sizing: border-box; display: block; width: 100%; padding: 10px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; font-size: 14px; text-align: left; }
 .hist-item:first-child { border-top: 0; padding-top: 0; }
 .hist-item > span { display: block; }
@@ -300,6 +334,12 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card" id="setupCard" aria-label="Übung einstellen">
+      <div class="song-chip" id="songChip" hidden>
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+        <span class="sc-txt"><b id="scTitle"></b></span>
+        <button type="button" class="btn tiny" id="songNext">Nächster</button>
+        <button type="button" class="icon-btn" id="songClear" aria-label="Song abwählen">×</button>
+      </div>
       <div class="field">
         <div class="seg" role="group" aria-label="Modus">
           <button type="button" data-mode="click">Mit Klick</button>
@@ -460,6 +500,33 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
   </section>
 
+  <!-- ======================= SETLIST ======================= -->
+  <section class="tab" id="tab-list" role="tabpanel" aria-labelledby="tb-list" hidden>
+    <section class="card" id="setlistCard">
+      <div class="card-head"><h2>Setlist</h2><button type="button" class="btn small" id="slEditBtn">Bearbeiten</button></div>
+      <p class="sl-sum" id="slSum"></p>
+      <p class="help" id="slHelp" style="margin:0 0 10px">Tippe auf einen Song: Die App übernimmt sein Tempo und benennt die Aufnahme danach.</p>
+      <div id="slList"></div>
+      <div id="slTools" hidden>
+        <div class="sl-tools">
+          <button type="button" class="btn small" id="slAddSong">+ Song</button>
+          <button type="button" class="btn small" id="slAddPause">+ Pause</button>
+          <button type="button" class="btn small push" id="slPasteBtn">Liste einfügen</button>
+        </div>
+        <div id="slPasteBox" hidden>
+          <p class="help">In deiner Tabelle die Zeilen markieren, kopieren und hier einfügen – Spalten: Interpret, Titel, BPM, Dauer (Minuten). Zeilen mit „Pause“ werden Pausen. Die jetzige Liste wird dabei ersetzt.</p>
+          <textarea id="slPaste" rows="6" spellcheck="false" aria-label="Liste einfügen"></textarea>
+          <div class="sl-tools">
+            <button type="button" class="btn small fill" id="slPasteOk">Liste ersetzen</button>
+            <button type="button" class="btn small" id="slPasteCancel">Abbrechen</button>
+          </div>
+        </div>
+        <div class="sl-tools"><button type="button" class="btn small danger push" id="slClear">Setlist leeren</button></div>
+      </div>
+      <p class="help" id="slMsg" role="status" hidden></p>
+    </section>
+  </section>
+
   <!-- ======================= EINSTELLUNGEN ======================= -->
   <section class="tab" id="tab-set" role="tabpanel" aria-labelledby="tb-set" hidden>
     <section class="card">
@@ -498,7 +565,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.2<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.3<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -513,6 +580,9 @@ button.hist-item { position: relative; padding-right: 28px; }
     </button>
     <button type="button" role="tab" id="tb-hist" data-tab="hist" aria-controls="tab-hist">
       <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>Verlauf
+    </button>
+    <button type="button" role="tab" id="tb-list" data-tab="list" aria-controls="tab-list">
+      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h9M4 11.5h9M4 16.5h5"/><path d="M17 17V5.5l3.5-1"/><circle cx="15" cy="17" r="2"/></svg></span>Setlist
     </button>
     <button type="button" role="tab" id="tb-set" data-tab="set" aria-controls="tab-set">
       <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span>Einstellungen
@@ -574,7 +644,18 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>5. Die Auswertung lesen</h2>
+      <h2>5. Setlist</h2>
+      <ul>
+        <li>Im Reiter <b>Setlist</b> stehen eure Songs mit Tempo und Dauer, aufgeteilt in Sets. Für jedes Set siehst du, wie viele Songs es hat und wie lange es dauert.</li>
+        <li>Tippst du auf einen Song, übernimmt die App sein Tempo – beim freien Spielen als Zieltempo, mit Klick als Klicktempo – und die Aufnahme bekommt den Songnamen. Oben in der Aufnahme steht der gewählte Song, <b>Nächster</b> springt zum nächsten Song der Liste.</li>
+        <li>Unter jedem Song steht, wie oft er aufgenommen wurde und das letzte Ergebnis.</li>
+        <li>Mit <b>Bearbeiten</b> änderst, verschiebst und löschst du Songs und fügst Songs oder Pausen ein. Eine Pause trennt zwei Sets. Gibst du ihr einen Namen (etwa „Zugabe“), wird daraus ein eigener Abschnitt.</li>
+        <li><b>Liste einfügen</b>: In deiner Tabelle die Zeilen markieren, kopieren und einfügen (Interpret, Titel, BPM, Dauer). Zeilen mit „Pause“ werden Pausen.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>6. Die Auswertung lesen</h2>
       <ul>
         <li><b>Tendenz:</b> ob du im Schnitt vor (−) oder hinter (+) dem Klick liegst.</li>
         <li><b>Streuung:</b> wie stark deine Schläge schwanken. Bis etwa ±10 ms ist sehr gleichmäßig, über ±20 ms noch unruhig.</li>
@@ -587,7 +668,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>6. Verlauf und Export</h2>
+      <h2>7. Verlauf und Export</h2>
       <ul>
         <li>Jede Aufnahme wird im Browser gespeichert, die letzten 60. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
         <li>Mit <b>Benennen</b> oben in der Auswertung gibst du einer Aufnahme einen Namen, etwa den Songtitel. Er steht dann im Verlauf und in exportierten Dateien.</li>
@@ -597,12 +678,12 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>7. Als App auf dem Startbildschirm</h2>
+      <h2>8. Als App auf dem Startbildschirm</h2>
       <p>Unter <b>Einstellungen → Als App nutzen</b> auf <b>App installieren</b> tippen. Erscheint der Knopf nicht, geht es auch über das Chrome-Menü (⋮): „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Nach dem ersten Öffnen läuft die App auch ohne Internet, etwa im Proberaum. Ist Internet da, lädt sie beim Start automatisch die neueste Version.</p>
     </section>
 
     <section class="card">
-      <h2>8. Gut zu wissen</h2>
+      <h2>9. Gut zu wissen</h2>
       <ul>
         <li>Die App versucht, den Bildschirm während der Aufnahme anzulassen. Wechselst du die App oder geht der Bildschirm doch aus, stoppt die Aufnahme und wird bis dahin ausgewertet und gespeichert.</li>
         <li>In der Bandprobe hört das Mikrofon alle Instrumente. Die Tempokurve funktioniert trotzdem; die Werte einzelner Schläge sind beim Üben allein aussagekräftiger.</li>
@@ -1352,11 +1433,54 @@ function analyzeFree3(onsets, opts) {
     stMax: clampInt(saved.stMax, 31, 300, 160),
     stClean: saved.stClean !== false,
     sensAuto: saved.sensAuto === true,
+    songId: typeof saved.songId === 'string' ? saved.songId : null,
     v: 3
   };
   if (saved.v !== 3) settings.sub = 0;          // new in this version: automatic note value as default
   let cal = store.get(K_CAL, {}) || {};
   const saveSettings = () => store.set(K_SET, settings);
+
+  // ---------- setlist: songs (t 's': artist a, title n, bpm, dur in minutes) and pauses (t 'p', optional label) ----------
+  const K_LIST = 'dtt.setlist.v1';
+  const DEFAULT_SETLIST = [   // the band's list when the app is opened for the first time
+    ['Joe Bonamassa', 'Blue And Evil', 90, 9], ['Jimi Hendrix', 'Foxy Lady', 90, 7], ['Black Rebel Motorcycle Club', 'Spread Your Love', 128, 3.5],
+    ['The Cold Stares', 'Nothing But The Blues', 121, 5], ['Paisley Petroleum', 'Lost my Mind', 87, 5], ['ZZ Top', 'La Grange', 160, 8.5],
+    [''],
+    ['The Cold Stares', 'Throw That Stone', null, 3], ['Joe Bonamassa', 'Woke Up Dreaming', null, 10], ['Canned Heat', 'On The Road Again', 125, 8],
+    ['Henrik Freischlader', 'She Ain’t Got The Blues', 148, 3.5], ['Eric Clapton', 'Cocaine', 105, 3.5], ['ZZ Top', 'Gimme All Your Lovin’', 120, 4],
+    ['Philip Sayce', 'Morning Star', 79, 5.5],
+    [''],
+    ['Joe Bonamassa', 'The River', 80, 7], ['Joe Bonamassa', 'Burning Hell', 167, 6], ['The Cold Stares', 'Price To Pay', 79, 2],
+    ['ZZ Top', 'Sharp Dressed Man', 125, 4], ['Paisley Petroleum', 'Drumsolo', null, 3], ['The Rolling Stones', 'Jumpin Jack Flash', 138, 5],
+    ['Thin Lizzy', 'Jailbreak', 145, 4], ['Tom Petty', 'Runnin’ Down A Dream', 170, 4], ['Mountain', 'Mississippi Queen', 140, 2],
+    [''],
+    ['UFO', 'Rock Bottom', 159, 6], ['The Doors', 'Roadhouse Blues', null, 4], ['Rush', 'The Seeker', 87, 3.5],
+    ['Michael Schenker', 'Armed And Ready', 172, 4], ['Joe Bonamassa', 'Just Got Paid', 91, 10], ['The Beatles', 'Back In The USSR', 142, 7],
+    ['Weitere Songs'],
+    ['Komodrag and the Mounodor', 'Voodoo Love', 130, null], ['Highly Suspect', 'Summertime Voodoo', 85, null], ['Gary Clark Jr.', 'Come Together', 80, null]
+  ].map((r, i) => {
+    const id = 'd' + String(i + 1).padStart(2, '0');
+    return r.length === 1 ? { id, t: 'p', label: r[0] } : { id, t: 's', a: r[0], n: r[1], bpm: r[2], dur: r[3] };
+  });
+  const cleanText = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
+  function cleanItem(x) {
+    if (!x || typeof x.id !== 'string') return null;
+    if (x.t === 'p') return { id: x.id.slice(0, 20), t: 'p', label: cleanText(x.label, 40) };
+    if (x.t !== 's') return null;
+    const bpm = Number(x.bpm), dur = Number(x.dur);
+    return { id: x.id.slice(0, 20), t: 's', a: cleanText(x.a, 60), n: cleanText(x.n, 60) || 'Ohne Titel',
+      bpm: x.bpm != null && Number.isFinite(bpm) && bpm >= 30 && bpm <= 300 ? Math.round(bpm) : null,
+      dur: x.dur != null && Number.isFinite(dur) && dur > 0 && dur <= 90 ? Math.round(dur * 100) / 100 : null };
+  }
+  function loadSetlist() {
+    const st = store.get(K_LIST, null);
+    if (!st || !Array.isArray(st.items)) return DEFAULT_SETLIST.map(x => Object.assign({}, x));
+    return st.items.map(cleanItem).filter(Boolean);
+  }
+  let setlist = loadSetlist();
+  const saveSetlist = () => store.set(K_LIST, { v: 1, items: setlist });
+  const currentSong = () => settings.songId ? setlist.find(x => x.t === 's' && x.id === settings.songId) || null : null;
+  if (settings.songId && !currentSong()) settings.songId = null;
 
   // Full recordings (raw hit times) live in IndexedDB – localStorage would be too small and too slow for long songs.
   const DB = (function () {
@@ -1455,6 +1579,7 @@ function analyzeFree3(onsets, opts) {
     $('st3l').textContent = click ? 'Streuung' : settings.ftarget ? 'zum Ziel' : 'seit Start';
     renderStageNote();
     renderCalInfo();
+    renderSongChip();
   }
   (function fillOptions() {
     const add = (sel, list) => list.forEach(([v, t]) => { const o = document.createElement('option'); o.value = String(v); o.textContent = t; sel.append(o); });
@@ -1517,9 +1642,11 @@ function analyzeFree3(onsets, opts) {
     const btn = $('startBtn');
     btn.textContent = running ? 'Stop' : 'Start';
     btn.classList.toggle('danger', running);
-    document.querySelectorAll('[data-mode],[data-ftarget],[data-practice],#stCleanBtn,#meterSel,#subSel,[data-output],#silOn,#silOff,#stStep,#stBars,#stMax,#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport')
+    document.querySelectorAll('[data-mode],[data-ftarget],[data-practice],#stCleanBtn,#meterSel,#subSel,[data-output],#silOn,#silOff,#stStep,#stBars,#stMax,#bpmDown,#bpmUp,#bpmRange,#latBtn,#latReset,#stageNote button,#histList button,#histImport,#songNext,#songClear,#slEditBtn')
       .forEach(el => { el.disabled = running; });
     renderRunState();
+    renderSongChip();
+    renderSetlist();
   }
 
   // While recording, the setup shrinks to one line and the live display appears; idle, only setup + microphone show.
@@ -1539,6 +1666,10 @@ function analyzeFree3(onsets, opts) {
   }
   function runLineText() {
     if (runKind === 'latency') return `Latenz-Messung (${OUT_NAMES[settings.output]})`;
+    const t = runLineCore();
+    return session && session.songName ? `${session.songName} · ${t}` : t;
+  }
+  function runLineCore() {
     const s = session;
     const mode = s ? s.mode : settings.mode, bpm = s ? s.bpm : settings.bpm;
     if (mode === 'click') {
@@ -1879,6 +2010,8 @@ function analyzeFree3(onsets, opts) {
       fOn: [], fts: [], fpk: [], lastLive: -1, livePrev: null, liveHist: [], startTempo: null, secStart: 0, bands: [], marks: [],
       onsets: 0, started: Date.now()
     };
+    const song = currentSong();
+    session.songId = song ? song.id : null; session.songName = song ? song.n : null;
     phase = 'session';
     applyThreshold();
     lastResult = null;
@@ -2681,6 +2814,11 @@ function analyzeFree3(onsets, opts) {
   // ---------- stored recordings ----------
   let currentRec = null;
   function recFromSession(s) {
+    const rec = recFromSessionData(s);
+    if (s.songName) { rec.name = s.songName.slice(0, 60); rec.sid = s.songId; }
+    return rec;
+  }
+  function recFromSessionData(s) {
     if (s.mode === 'click') {
       const stair = s.practice === 'stair', sil = s.practice === 'silent';
       return { v: 2, mode: 'click', started: s.started, bpm: s.bpm, subMode: s.subMode, calibrated: s.calibrated, latency: s.latency, output: s.output,
@@ -2748,6 +2886,7 @@ function analyzeFree3(onsets, opts) {
     $('recInfo').textContent = info; $('tlSub').hidden = true;
     $('recActions').hidden = !entry;
     if (entry && rec.name) entry.name = rec.name;
+    if (entry && rec.sid) entry.sid = rec.sid;
     $('renameForm').hidden = true;
     renderRecHead(!!entry);
     const del = $('recDelete'); del.dataset.armed = ''; del.classList.remove('armed'); del.textContent = 'Aufnahme löschen';
@@ -2982,7 +3121,7 @@ function analyzeFree3(onsets, opts) {
     $('histClear').hidden = !h.length;
     $('histClear').textContent = 'Verlauf löschen'; $('histClear').dataset.armed = ''; $('histClear').classList.remove('armed');
     $('histHelp').hidden = !h.some(e => e.full);
-    if (!h.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Noch keine Übungen gespeichert.'; list.append(p); return; }
+    if (!h.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Noch keine Übungen gespeichert.'; list.append(p); renderSetlist(); return; }
     h.forEach(e => {
       const item = document.createElement(e.full ? 'button' : 'div');
       item.className = 'hist-item' + (currentRec && currentRec.started === e.d ? ' active' : '');
@@ -3022,6 +3161,7 @@ function analyzeFree3(onsets, opts) {
       }
       list.append(item);
     });
+    renderSetlist();
   }
   $('histClear').addEventListener('click', () => {
     const b = $('histClear');
@@ -3043,6 +3183,276 @@ function analyzeFree3(onsets, opts) {
     histMsg('Aufnahme gelöscht.');
     showTab('hist', { top: true });
   });
+
+  // ---------- setlist tab ----------
+  let slEditing = false, slOpen = null;
+  const fmtMin = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
+  const fmtTotal = (m) => m < 60 ? `${fmtMin(m)} min` : `${Math.floor(Math.round(m) / 60)} h ${Math.round(m) % 60} min`;
+  function parseMinutes(v) {
+    const t = String(v == null ? '' : v).trim().replace(',', '.');
+    if (!t || t === '-' || t === '–') return null;
+    const m = t.match(/^(\d+):(\d{1,2})$/);
+    const x = m ? Number(m[1]) + Number(m[2]) / 60 : Number(t);
+    return Number.isFinite(x) && x > 0 && x <= 90 ? Math.round(x * 100) / 100 : null;
+  }
+  function parseBpm(v) {
+    const x = Number(String(v == null ? '' : v).trim().replace(',', '.'));
+    return Number.isFinite(x) && x >= 30 && x <= 300 ? Math.round(x) : null;
+  }
+  const newId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function slMsg(t) { $('slMsg').textContent = t; $('slMsg').hidden = !t; }
+  // latest result per song, from the history
+  function songStats() {
+    const m = new Map();
+    histGet().forEach(e => {
+      if (!e.sid) return;
+      const o = m.get(e.sid);
+      if (!o) m.set(e.sid, { n: 1, last: e }); else { o.n++; if (e.d > o.last.d) o.last = e; }
+    });
+    return m;
+  }
+  function resultText(st) {
+    const e = st.last;
+    const r = e.m === 'c' ? (e.sp != null ? `Streuung ±${r0(e.sp)} ms` : '') : (e.tp != null ? `Ø ${r0(e.tp)} BPM` : '');
+    return `${st.n}× aufgenommen` + (r ? ` · zuletzt ${r}` : '');
+  }
+  function el(tag, cls, text) { const x = document.createElement(tag); if (cls) x.className = cls; if (text != null) x.textContent = text; return x; }
+  function renderSetlist() {
+    const list = $('slList'); if (!list) return;
+    list.textContent = '';
+    const busyNow = setupLocked();
+    $('slEditBtn').textContent = slEditing ? 'Fertig' : 'Bearbeiten';
+    $('slEditBtn').classList.toggle('on', slEditing);
+    $('slEditBtn').disabled = busyNow;
+    $('slTools').hidden = !slEditing;
+    $('slHelp').hidden = !setlist.length;
+    $('slHelp').textContent = slEditing ? 'Tippe auf einen Song oder eine Pause, um sie zu ändern, zu verschieben oder zu löschen.' : 'Tippe auf einen Song: Die App übernimmt sein Tempo und benennt die Aufnahme danach.';
+    // groups: songs up to the next pause
+    const groups = [{ sep: null, items: [] }];
+    setlist.forEach(x => { if (x.t === 'p') groups.push({ sep: x, items: [] }); else groups[groups.length - 1].items.push(x); });
+    const songs = setlist.filter(x => x.t === 's'), total = songs.reduce((a, x) => a + (x.dur || 0), 0);
+    const nSets = groups.filter(g => g.items.length && !(g.sep && g.sep.label)).length;
+    $('slSum').textContent = songs.length ? `${songs.length} Songs` + (nSets > 1 ? ` in ${nSets} Sets` : '') + (total ? ` · ${fmtTotal(total)}` : '') : '';
+    $('slSum').hidden = !songs.length;
+    if (!setlist.length) { list.append(el('p', 'empty', slEditing ? 'Die Liste ist leer. Füge Songs hinzu oder füge deine Liste ein.' : 'Noch keine Songs. Tippe auf „Bearbeiten“, um Songs einzutragen.')); return; }
+    const stats = songStats(), sel = settings.songId;
+    let setNo = 0, pauseNo = 0;
+    const addEditor = (item) => { if (slEditing && slOpen === item.id) list.append(editorFor(item)); };
+    groups.forEach((g) => {
+      const named = !!(g.sep && g.sep.label);
+      if (g.sep && !named) {
+        pauseNo++;
+        const row = el(slEditing ? 'button' : 'div', slEditing ? 'sl-row sep' : '');
+        const d = el('div', 'sl-pause', `Pause ${pauseNo}`);
+        if (slEditing) { row.type = 'button'; row.dataset.id = g.sep.id; row.append(d); list.append(row); } else list.append(d);
+        addEditor(g.sep);
+      }
+      if (!g.items.length && !named && g.sep) return;
+      if (!named) setNo++;
+      const dur = g.items.reduce((a, x) => a + (x.dur || 0), 0);
+      const head = el(named && slEditing ? 'button' : 'div', named && slEditing ? 'sl-row sep' : '');
+      const h = el('div', 'sl-set', named ? g.sep.label : `Set ${setNo}`);
+      h.append(el('span', '', `${g.items.length} ${g.items.length === 1 ? 'Song' : 'Songs'}` + (dur ? ` · ${fmtTotal(dur)}` : '')));
+      if (named && slEditing) { head.type = 'button'; head.dataset.id = g.sep.id; head.append(h); list.append(head); } else list.append(h);
+      if (named) addEditor(g.sep);
+      g.items.forEach(x => {
+        const b = el('button', 'sl-row' + (x.id === sel ? ' sel' : ''));
+        b.type = 'button'; b.dataset.id = x.id;
+        b.disabled = busyNow && !slEditing;
+        b.append(el('span', 'sl-t', x.n), el('span', 'sl-b num', x.bpm ? `${x.bpm} BPM` : ''));
+        const sub = [x.a, x.dur ? `${fmtMin(x.dur)} min` : ''].filter(Boolean).join(' · ');
+        if (sub) b.append(el('span', 'sl-a', sub));
+        const st = stats.get(x.id);
+        if (st && !slEditing) b.append(el('span', 'sl-r', resultText(st)));
+        b.setAttribute('aria-label', slEditing ? `${x.n} bearbeiten` : `${x.n}${x.bpm ? ', ' + x.bpm + ' BPM' : ''} auswählen`);
+        list.append(b);
+        addEditor(x);
+      });
+    });
+  }
+  function editorFor(item) {
+    const box = el('div', 'sl-edit'); box.dataset.for = item.id;
+    const grid = el('div', 'sl-grid');
+    const field = (label, f, value, attrs, wide) => {
+      const l = el('label', wide ? 'wide' : '', label);
+      const i = document.createElement('input'); i.type = 'text'; i.dataset.f = f; i.value = value == null ? '' : String(value);
+      Object.entries(attrs || {}).forEach(([k, v]) => i.setAttribute(k, v));
+      l.append(i); grid.append(l); return i;
+    };
+    if (item.t === 's') {
+      field('Titel', 'n', item.n === 'Ohne Titel' ? '' : item.n, { maxlength: '60', autocomplete: 'off' }, true);
+      field('Interpret', 'a', item.a, { maxlength: '60', autocomplete: 'off' }, true);
+      field('BPM', 'bpm', item.bpm, { inputmode: 'numeric', maxlength: '5', autocomplete: 'off' });
+      field('Dauer (Minuten)', 'dur', item.dur == null ? '' : fmtMin(item.dur), { inputmode: 'decimal', maxlength: '6', autocomplete: 'off' });
+    } else {
+      field('Name – leer lassen für eine Pause zwischen zwei Sets', 'label', item.label, { maxlength: '40', autocomplete: 'off', placeholder: 'Pause' }, true);
+    }
+    box.append(grid);
+    const i = setlist.indexOf(item);
+    const tools = el('div', 'sl-tools');
+    const btn = (text, act, cls, label) => { const b = el('button', 'btn small' + (cls ? ' ' + cls : ''), text); b.type = 'button'; b.dataset.act = act; if (label) b.setAttribute('aria-label', label); tools.append(b); return b; };
+    btn('↑', 'up', '', 'nach oben').disabled = i <= 0;
+    btn('↓', 'down', '', 'nach unten').disabled = i >= setlist.length - 1;
+    btn('Löschen', 'del', 'danger');
+    btn('Fertig', 'done', 'fill push');
+    box.append(tools);
+    const ins = el('div', 'sl-ins', 'Danach einfügen:');
+    [['Song', 'addSong'], ['Pause', 'addPause']].forEach(([t, a]) => { const b = el('button', 'btn tiny', t); b.type = 'button'; b.dataset.act = a; ins.append(b); });
+    box.append(ins);
+    return box;
+  }
+  function openEditor(id, focusFirst) {
+    slOpen = id; renderSetlist();
+    const box = document.querySelector(`.sl-edit[data-for="${id}"]`);
+    if (box) {
+      try { box.scrollIntoView({ block: 'nearest' }); } catch (e) { /* ignore */ }
+      if (focusFirst) { const inp = box.querySelector('input'); if (inp) try { inp.focus(); } catch (e) { /* ignore */ } }
+    }
+  }
+  function closeEditor() {
+    const it = setlist.find(x => x.id === slOpen);
+    if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel';
+    slOpen = null; saveSetlist(); renderSetlist();
+  }
+  function insertItem(item) {
+    const at = slOpen ? setlist.findIndex(x => x.id === slOpen) : -1;
+    if (at >= 0) setlist.splice(at + 1, 0, item); else setlist.push(item);
+    saveSetlist(); openEditor(item.id, item.t === 's');
+  }
+  $('slList').addEventListener('input', (ev) => {
+    const inp = ev.target; if (!inp.dataset || !inp.dataset.f) return;
+    const box = inp.closest('.sl-edit'); const it = box && setlist.find(x => x.id === box.dataset.for); if (!it) return;
+    const f = inp.dataset.f, v = inp.value;
+    if (f === 'n') it.n = cleanText(v, 60);
+    else if (f === 'a') it.a = cleanText(v, 60);
+    else if (f === 'bpm') it.bpm = parseBpm(v);
+    else if (f === 'dur') it.dur = parseMinutes(v);
+    else if (f === 'label') it.label = cleanText(v, 40);
+    saveSetlist();
+    if (it.id === settings.songId) renderSongChip();
+  });
+  $('slList').addEventListener('click', (ev) => {
+    const actBtn = ev.target.closest('[data-act]');
+    if (actBtn) {
+      const box = actBtn.closest('.sl-edit'); const i = box ? setlist.findIndex(x => x.id === box.dataset.for) : -1; if (i < 0) return;
+      const it = setlist[i], act = actBtn.dataset.act;
+      if (act === 'done') { closeEditor(); return; }
+      if (act === 'up' || act === 'down') {
+        const j = act === 'up' ? i - 1 : i + 1; if (j < 0 || j >= setlist.length) return;
+        setlist[i] = setlist[j]; setlist[j] = it; saveSetlist(); openEditor(it.id); return;
+      }
+      if (act === 'del') {
+        if (!actBtn.dataset.armed) { actBtn.dataset.armed = '1'; actBtn.classList.add('armed'); actBtn.textContent = 'Nochmal tippen'; return; }
+        setlist.splice(i, 1);
+        if (it.id === settings.songId) { settings.songId = null; saveSettings(); renderSongChip(); }
+        slOpen = null; saveSetlist(); renderSetlist(); return;
+      }
+      if (act === 'addSong') { insertItem({ id: newId(), t: 's', a: '', n: '', bpm: null, dur: null }); return; }
+      if (act === 'addPause') { insertItem({ id: newId(), t: 'p', label: '' }); return; }
+      return;
+    }
+    const row = ev.target.closest('button.sl-row'); if (!row || row.disabled) return;
+    const id = row.dataset.id;
+    if (slEditing) { if (slOpen === id) closeEditor(); else { if (slOpen) { const it = setlist.find(x => x.id === slOpen); if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel'; } openEditor(id); } return; }
+    selectSong(id);
+  });
+  $('slEditBtn').addEventListener('click', () => {
+    if (slEditing) { const it = setlist.find(x => x.id === slOpen); if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel'; saveSetlist(); }
+    slEditing = !slEditing; slOpen = null; slMsg(''); $('slPasteBox').hidden = true; resetArm($('slClear'), 'Setlist leeren');
+    renderSetlist();
+  });
+  $('slAddSong').addEventListener('click', () => insertItem({ id: newId(), t: 's', a: '', n: '', bpm: null, dur: null }));
+  $('slAddPause').addEventListener('click', () => insertItem({ id: newId(), t: 'p', label: '' }));
+  function resetArm(b, text) { b.dataset.armed = ''; b.classList.remove('armed'); b.textContent = text; }
+  $('slClear').addEventListener('click', () => {
+    const b = $('slClear');
+    if (!setlist.length) return;
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Nochmal tippen: alle Songs löschen'; return; }
+    resetArm(b, 'Setlist leeren');
+    setlist = []; slOpen = null; saveSetlist();
+    if (settings.songId) { settings.songId = null; saveSettings(); renderSongChip(); }
+    slMsg('Die Setlist ist jetzt leer.'); renderSetlist();
+  });
+  // paste rows copied from a spreadsheet: artist, title, BPM, minutes; rows saying "Pause" become pauses
+  function parseSetlistText(text) {
+    const out = [];
+    String(text || '').split(/\r?\n/).forEach(raw => {
+      const line = raw.replace(/ /g, ' ');
+      if (!line.trim()) return;
+      let cells = line.includes('\t') ? line.split('\t') : line.includes(';') ? line.split(';') : [line];
+      cells = cells.map(c => c.trim().replace(/^"(.*)"$/, '$1').trim());
+      while (cells.length && !cells[cells.length - 1]) cells.pop();
+      const filled = cells.filter(Boolean);
+      if (!filled.length) return;
+      const low = filled.map(c => c.toLowerCase());
+      if (low.includes('titel') && (low.includes('interpret') || low.includes('bpm'))) return;        // header row
+      if (filled.length === 1 && /^pause\b/i.test(filled[0])) { out.push({ id: newId(), t: 'p', label: /^pause\s*\d*\s*$/i.test(filled[0]) ? '' : cleanText(filled[0], 40) }); return; }
+      let a = '', n = '', bpm = null, dur = null;
+      if (cells.length === 1) {
+        const m = cells[0].match(/^(.+?)\s+[-–]\s+(.+)$/);
+        if (m) { a = m[1]; n = m[2]; } else n = cells[0];
+      } else if (cells.length === 2) {
+        if (parseBpm(cells[1]) != null) { n = cells[0]; bpm = parseBpm(cells[1]); } else { a = cells[0]; n = cells[1]; }
+      } else { a = cells[0]; n = cells[1]; bpm = parseBpm(cells[2]); dur = parseMinutes(cells[3]); }
+      if (!n && a) { n = a; a = ''; }
+      if (!n) return;
+      out.push({ id: newId(), t: 's', a: cleanText(a, 60), n: cleanText(n, 60), bpm, dur });
+    });
+    return out;
+  }
+  $('slPasteBtn').addEventListener('click', () => {
+    const box = $('slPasteBox'); box.hidden = !box.hidden; slMsg('');
+    resetArm($('slPasteOk'), 'Liste ersetzen');
+    if (!box.hidden) { slOpen = null; renderSetlist(); try { $('slPaste').focus(); } catch (e) { /* ignore */ } }
+  });
+  $('slPasteCancel').addEventListener('click', () => { $('slPasteBox').hidden = true; resetArm($('slPasteOk'), 'Liste ersetzen'); });
+  $('slPaste').addEventListener('input', () => resetArm($('slPasteOk'), 'Liste ersetzen'));
+  $('slPasteOk').addEventListener('click', () => {
+    const b = $('slPasteOk');
+    const items = parseSetlistText($('slPaste').value);
+    const nSongs = items.filter(x => x.t === 's').length, nP = items.length - nSongs;
+    if (!nSongs) { slMsg('Keine Songs erkannt. Erwartet werden Zeilen mit Interpret, Titel, BPM und Dauer.'); return; }
+    if (setlist.some(x => x.t === 's') && !b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = `Nochmal tippen: ${nSongs} Songs übernehmen`; return; }
+    // songs that were already in the list keep their id, so their recordings stay linked
+    const key = (x) => (x.a + '|' + x.n).toLowerCase(), old = new Map(setlist.filter(x => x.t === 's').map(x => [key(x), x.id]));
+    items.forEach(x => { if (x.t === 's' && old.has(key(x))) { x.id = old.get(key(x)); old.delete(key(x)); } });
+    setlist = items; slOpen = null; saveSetlist();
+    if (settings.songId && !currentSong()) { settings.songId = null; saveSettings(); }
+    renderSongChip();
+    $('slPaste').value = ''; $('slPasteBox').hidden = true; resetArm(b, 'Liste ersetzen');
+    slMsg(`Liste übernommen: ${nSongs} Songs` + (nP ? `, ${nP} ${nP === 1 ? 'Pause' : 'Pausen'}` : '') + '.');
+    renderSetlist();
+  });
+  // choosing a song: its tempo becomes the target (free) or click tempo, the recording gets its name
+  function selectSong(id) {
+    const song = setlist.find(x => x.t === 's' && x.id === id);
+    if (!song) return;
+    if (setupLocked()) { slMsg('Während einer Aufnahme kannst du keinen Song wählen.'); return; }
+    settings.songId = song.id;
+    if (song.bpm) { settings.bpm = clampInt(song.bpm, 30, 300, settings.bpm); settings.ftarget = true; } else settings.ftarget = false;
+    saveSettings(); slMsg('');
+    renderSetup(); renderSetlist();
+    if (currentTab !== 'rec') showTab('rec', { top: true });
+  }
+  function nextSongOf(id) {
+    const i = setlist.findIndex(x => x.id === id);
+    for (let j = i + 1; j < setlist.length; j++) if (setlist[j].t === 's') return setlist[j];
+    return null;
+  }
+  function renderSongChip() {
+    const song = currentSong(), chip = $('songChip');
+    if (!chip) return;
+    chip.hidden = !song;
+    if (!song) return;
+    $('scTitle').textContent = song.n;
+    chip.title = [song.n, song.a, song.bpm ? song.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
+    const nx = nextSongOf(song.id), busyNow = setupLocked();
+    $('songNext').disabled = !nx || busyNow;
+    $('songNext').setAttribute('aria-label', nx ? `Nächster Song: ${nx.n}` : 'Kein weiterer Song');
+    $('songClear').disabled = busyNow;
+  }
+  $('songNext').addEventListener('click', () => { const s = currentSong(); const nx = s && nextSongOf(s.id); if (nx) selectSong(nx.id); });
+  $('songClear').addEventListener('click', () => { if (setupLocked()) return; settings.songId = null; saveSettings(); renderSongChip(); renderSetlist(); });
 
   // ---------- export / open file (optional backup, or to look at a recording on another device) ----------
   $('recExport').addEventListener('click', () => {
@@ -3157,7 +3567,7 @@ function analyzeFree3(onsets, opts) {
   // ---------- tabs, instructions page, Android back button ----------
   // The other tabs sit one step "above" Aufnahme in the browser history, so the back button returns there
   // instead of leaving the app; the instructions page is one more step on top.
-  const TABS = ['rec', 'eval', 'hist', 'set'];
+  const TABS = ['rec', 'eval', 'hist', 'list', 'set'];
   let currentTab = 'rec', helpOpen = false;
   const tabScroll = {};
   function updateRecBanner() {
@@ -3260,7 +3670,12 @@ function analyzeFree3(onsets, opts) {
   });
   if ('serviceWorker' in navigator && window.isSecureContext) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').then(() => renderInstall(true)).catch(() => renderInstall(false));
+      navigator.serviceWorker.register('sw.js').then((reg) => { renderInstall(true); try { reg.update(); } catch (e) { /* ignore */ } }).catch(() => renderInstall(false));
+      // a new version was installed while the app starts: show it right away (only if nothing is running yet)
+      const hadController = !!navigator.serviceWorker.controller, openedAt = Date.now();
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController && Date.now() - openedAt < 30000 && phase === 'idle' && !busy && !session) location.reload();
+      });
     });
   } else renderInstall(false);
 
