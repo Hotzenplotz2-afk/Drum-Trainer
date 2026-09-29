@@ -498,7 +498,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.2<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -539,7 +539,7 @@ button.hist-item { position: relative; padding-right: 28px; }
         <li>Empfindlichkeit einstellen: Unter <b>Aufnahme</b> neben „Mikrofonpegel“ auf <b>Testen</b> tippen, kurz still sein, dann ein paar Schläge spielen. Jeder erkannte Schlag lässt den Punkt daneben aufleuchten und wird gezählt.</li>
       </ol>
       <p>Der Strich im Pegel ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Fehlen leise Schläge (Ghost Notes), schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme.</p>
-      <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle vor jeder Aufnahme selbst ein: so empfindlich, wie das Grundrauschen im Raum es zulässt. Dafür am Anfang kurz still sein. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit.</p>
+      <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle selbst ein und regelt während der ganzen Aufnahme nach. Beim Start misst sie kurz das Grundrauschen – dafür am besten kurz still sein. Danach misst sie in jeder ruhigen Pause neu. War der Start gestört, etwa weil du oder die Band schon gespielt habt, senkt sie die Schwelle nach ein paar Sekunden von selbst. Wird es lauter, muss sie nichts tun: Ein Schlag zählt ohnehin nur, wenn er sich deutlich vom Geräusch direkt davor abhebt. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit.</p>
     </section>
 
     <section class="card">
@@ -567,7 +567,7 @@ button.hist-item { position: relative; padding-right: 28px; }
       <h2>4. Frei spielen – Songs und Band</h2>
       <ul>
         <li>Ohne Klick: Die App erkennt das Tempo aus deinem Groove und zeichnet eine Tempokurve.</li>
-        <li>Pausen über 4 Sekunden trennen Songs. Jeder Abschnitt wird einzeln ausgewertet.</li>
+        <li>Pausen über 4 Sekunden trennen Songs. Jeder Abschnitt wird einzeln ausgewertet. Wechselt das Tempo ohne lange Pause, folgt die Kurve nach ein paar Sekunden.</li>
         <li>Kennst du das Tempo des Songs, stell ein <b>Zieltempo</b> ein. Dann zeigt die Kurve die Abweichung davon, und die App verwechselt es kaum noch mit dem halben oder doppelten.</li>
         <li>Zeigt die Auswertung das halbe oder doppelte Tempo, tippe auf <b>Tempo halbieren</b> bzw. <b>Tempo verdoppeln</b>.</li>
       </ul>
@@ -642,8 +642,62 @@ class OnsetDetector {
     this.a1 = -2 * cw / a0; this.a2 = (1 - alpha) / a0;
     this.x1 = 0; this.x2 = 0; this.y1 = 0; this.y2 = 0;
     this.noiseP99 = 0;
+    // "Auto" sensitivity, optional: keeps measuring for as long as the microphone runs.
+    // 1) In every quiet, steady moment (no hit for 1.2 s, no ringing out) it measures the background again,
+    //    exactly like at the start, and lowers the threshold if the room got quieter.
+    // 2) While you play it watches the background between your hits; if the threshold is far above it
+    //    (the start measurement was disturbed, e.g. you already played), it lowers the threshold.
+    this.autoTrack = false;
+    this.autoBase = 0;                                 // current automatic threshold
+    this.autoMin = 0;                                  // lower limit set by the app (click over the speaker)
+    this.aWin = Math.max(20, Math.round(2.0 / this.blockDur));        // last 2 s of block levels
+    this.aQuiet = Math.max(12, Math.round(1.2 / this.blockDur));      // a pause must be quiet for 1.2 s
+    this.aRing = new Float32Array(this.aWin); this.aIdx = 0; this.aFill = 0;
+    this.aChunk = Math.max(4, Math.round(0.25 / this.blockDur)); this.aCnt = 0; this.aDense = 0;
+    this.autoLog = [];                                 // [time, threshold, reason] – for the tests
   }
   emit(p) { this.onOnset(p.time, p.peak, p.full); }
+  startAutoTrack(base, min) {
+    this.autoTrack = true; this.autoMin = min || 0; this.aFill = 0; this.aCnt = 0; this.aDense = 0; this.autoLog = [];
+    this.autoBase = base; this.threshold = Math.max(base, this.autoMin);
+  }
+  setAutoMin(min) { this.autoMin = min || 0; if (this.autoTrack) this.threshold = Math.max(this.autoBase, this.autoMin); }
+  stopAutoTrack() { this.autoTrack = false; }
+  autoSet(v, t, why) {
+    this.autoBase = v; this.threshold = Math.max(v, this.autoMin);
+    if (this.autoLog.length < 2000) this.autoLog.push([t, v, why]);
+  }
+  autoTick(t) {
+    const W = this.aWin, Q = this.aQuiet, ring = this.aRing;
+    const last = (m) => { const a = new Float32Array(m); for (let k = 0; k < m; k++) a[k] = ring[(this.aIdx - m + k + 2 * W) % W]; return a; };   // oldest → newest
+    // 1) quiet and steady for 1.2 s (no hit, no ringing out): measure again like at the start
+    if (this.aFill >= Q && t - this.lastOnset >= Q * this.blockDur && !this.pending) {
+      const w = last(Q), third = Math.floor(Q / 3), meds = [];
+      for (let k = 0; k < 3; k++) { const a = w.slice(k * third, (k + 1) * third).sort(); meds.push(a[third >> 1]); }
+      const v = w.slice().sort();
+      const med = Math.max(v[Q >> 1], 0.0003), p99 = Math.max(v[Math.floor(Q * 0.99)], 0.0003);
+      if (p99 < 1.6 * med && Math.max(meds[0], meds[1], meds[2]) < 1.4 * Math.min(meds[0], meds[1], meds[2])) {
+        // only downwards: when it gets louder, the detector adapts by itself (a hit has to rise clearly above
+        // the sound just before it); raising the threshold as well only cost ghost notes in the tests
+        const nb = autoThreshold(med, p99);
+        if (nb < 0.95 * this.autoBase) this.autoSet(nb, t, 'pause');
+        return;
+      }
+    }
+    // 2) threshold far above the background between hits (start measured while you or the band played): lower it.
+    //    Steady background (room noise): to what a start measurement would give. Dense background (music, a kit):
+    //    close to its floor – hits are then found by how much they rise above the sound just before them.
+    if (this.aFill === W) {
+      const v = last(W).sort();
+      const floor = Math.max(v[Math.floor(W * 0.1)], 1e-6), dense = v[W >> 1] / floor >= 1.4;
+      const target = Math.max((dense ? 1.2 : AUTO_FLOOR_K) * floor, 0.001);
+      if (!dense) { this.aDense = 0; if (this.autoBase > 2 * target) this.autoSet(target, t, 'lower'); }
+      else if (this.autoBase > 4 * target) {
+        // must hold for 2.5 s, so a room that just got quieter (a level step inside the window) doesn't count as music
+        if (++this.aDense >= 10) { this.aDense = 0; this.autoSet(target, t, 'lower-music'); }
+      } else this.aDense = 0;
+    }
+  }
   startNoiseMeasure() { this.measuring = true; this.measureVals = []; }
   stopNoiseMeasure() {
     this.measuring = false;
@@ -668,6 +722,10 @@ class OnsetDetector {
       const t = t0 + off / this.sr;
       if (rms > this.peakSinceRead) this.peakSinceRead = rms;
       if (this.measuring) this.measureVals.push(rms);
+      else if (this.autoTrack) {
+        this.aRing[this.aIdx] = rms; this.aIdx = (this.aIdx + 1) % this.aWin; if (this.aFill < this.aWin) this.aFill++;
+        if (++this.aCnt >= this.aChunk) { this.aCnt = 0; this.autoTick(t); }
+      }
 
       if (this.pending) {
         if (rms > this.pending.peak) this.pending.peak = rms;
@@ -711,6 +769,7 @@ function circMean(vals, g) {
 // sensitivity slider (0..100) -> threshold multiple of the noise floor (40 .. 3)
 function sensFactor(s) { return 40 * Math.pow(3 / 40, s / 100); }
 // automatic sensitivity: set once from the silence before playing – as sensitive as the room noise allows
+const AUTO_FLOOR_K = 3.45;   // in steady noise: autoThreshold ≈ 3.45 × 10th percentile of the block level
 function autoThreshold(noiseMedian, noiseP99) { return Math.max(2.5 * noiseP99, 3 * noiseMedian, 0.001); }
 
 // ---------- click mode analysis ----------
@@ -1028,6 +1087,7 @@ function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
 
 // ---------- tempo estimation from onsets (no click) ----------
 const T_MIN = 55, T_MAX = 200, T_STEP = 1.01;
+const FREE_JUMP = 12;   // cost of an abrupt tempo change in the free analysis (tested: 8 too eager on messy material, 16+ misses changes)
 const T_GRID = (() => { const a = []; for (let t = T_MIN; t <= T_MAX; t *= T_STEP) a.push(t); return a; })();
 function tempoPrior(center, sigmaOct) { return T_GRID.map(t => { const z = Math.log2(t / center) / sigmaOct; return Math.exp(-0.5 * z * z); }); }
 
@@ -1122,12 +1182,27 @@ function analyzeFree3(onsets, opts) {
       E.push(S ? S.map((v, k) => Math.log(1e-3 + v * prior[k])) : T_GRID.map((_, k) => Math.log(1e-3 + prior[k])));
     }
     const K = T_GRID.length, MAXJ = 6, LAMBDA = 0.35;
+    // The tempo normally changes smoothly. It may also jump (a new song or part without a long pause), but only
+    // at a cost, i.e. when the rhythm points clearly to the new tempo for several seconds. A jump to double or half
+    // the tempo is never a tempo change, just the same groove counted differently – that stays smooth.
+    const JUMP = opts.jump != null ? opts.jump : FREE_JUMP;
+    const OCT = Math.round(1 / Math.log2(T_STEP));          // grid steps per octave
     let dp = E[0].slice(); const back = [];
+    const order = T_GRID.map((_, j) => j);
     for (let w = 1; w < E.length; w++) {
       const nd = new Array(K), bk = new Int16Array(K);
+      if (JUMP < Infinity) order.sort((x, y) => dp[y] - dp[x]);   // best previous tempi first
       for (let k = 0; k < K; k++) {
         let bv = -Infinity, bj = k;
         for (let d = -MAXJ; d <= MAXJ; d++) { const j = k + d; if (j < 0 || j >= K) continue; const v = dp[j] - LAMBDA * d * d; if (v > bv) { bv = v; bj = j; } }
+        if (JUMP < Infinity) {
+          for (const j of order) {                              // the best tempo a jump may come from
+            const d = Math.abs(j - k);
+            if (d <= MAXJ || Math.abs(d - OCT) <= 8) continue;
+            if (dp[j] - JUMP > bv) { bv = dp[j] - JUMP; bj = j; }
+            break;
+          }
+        }
         nd[k] = bv + E[w][k]; bk[k] = bj;
       }
       dp = nd; back.push(bk);
@@ -1426,7 +1501,7 @@ function analyzeFree3(onsets, opts) {
   document.querySelectorAll('[data-ftarget]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.ftarget = b.dataset.ftarget === '1'; saveSettings(); renderSetup(); }));
   function renderSensDesc() {
     const v = settings.sens, auto = settings.sensAuto;
-    $('sensDesc').textContent = auto ? 'automatisch nach Raumgeräusch' : v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel';
+    $('sensDesc').textContent = auto ? 'regelt nach' : v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel';
     $('sens').disabled = auto;
     $('sensAuto').classList.toggle('on', auto); $('sensAuto').setAttribute('aria-pressed', String(auto));
   }
@@ -1661,13 +1736,20 @@ function analyzeFree3(onsets, opts) {
     return Math.max(noiseFloor * sensFactor(settings.sens), 0.0015);
   }
   function applyThreshold() {
-    if (!detector || phase === 'latcal') return;
-    let thr = baseThreshold();
+    if (!detector || phase === 'latcal' || phase === 'noise') return;
+    let min = 0;
     const sc = cal.speaker;
     if (session && session.mode === 'click' && session.output === 'speaker' && sc && sc.clickPeakPerGain) {
-      thr = Math.max(thr, 1.5 * sc.clickPeakPerGain * clickGain());
+      min = 1.5 * sc.clickPeakPerGain * clickGain();          // the click over the speaker must not count as a hit
     }
-    detector.threshold = thr;
+    if (settings.sensAuto) {
+      // Auto keeps measuring for as long as the microphone runs (see OnsetDetector.autoTick)
+      if (!detector.autoTrack) detector.startAutoTrack(baseThreshold(), min);
+      else detector.setAutoMin(min);
+    } else {
+      detector.stopAutoTrack();
+      detector.threshold = Math.max(baseThreshold(), min);
+    }
   }
   function playClick(time, accent) {        // accent: 2 = bar start, 1 = group start, 0/false = normal
     const lvl = accent === true ? 2 : (accent || 0);
