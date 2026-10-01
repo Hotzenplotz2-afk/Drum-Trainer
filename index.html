@@ -591,7 +591,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.6<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.7<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -634,8 +634,8 @@ button.hist-item { position: relative; padding-right: 28px; }
         <li>Beim ersten Start fragt der Browser nach dem Mikrofon – erlauben.</li>
         <li>Empfindlichkeit einstellen: Unter <b>Aufnahme</b> neben „Mikrofonpegel“ auf <b>Testen</b> tippen, kurz still sein, dann ein paar Schläge spielen. Jeder erkannte Schlag lässt den Punkt daneben aufleuchten und wird gezählt.</li>
       </ol>
-      <p>Der Strich im Pegel ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Fehlen leise Schläge (Ghost Notes), schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme.</p>
-      <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle selbst ein und regelt während der ganzen Aufnahme nach. Beim Start misst sie kurz das Grundrauschen – dafür am besten kurz still sein. Danach misst sie in jeder ruhigen Pause neu. War der Start gestört, etwa weil du oder die Band schon gespielt habt, senkt sie die Schwelle nach ein paar Sekunden von selbst. Wird es lauter, muss sie nichts tun: Ein Schlag zählt ohnehin nur, wenn er sich deutlich vom Geräusch direkt davor abhebt. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit.</p>
+      <p>Der Strich im Pegel ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Er steht dort, wo der Regler steht, nur spiegelverkehrt: Regler ganz links (nur kräftige Schläge) heißt Strich ganz rechts, Regler ganz rechts (auch Ghost Notes) heißt Strich ganz links, knapp über dem Grundrauschen. Der Balken zeigt deinen Pegel in genau diesem Bereich. Ist er ganz voll, liegt der Schlag über jeder Einstellung. Fehlen leise Schläge, schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme. Kommt der Klick aus dem Lautsprecher, beginnt der Bereich knapp über dem Klick, damit er nicht als Schlag zählt.</p>
+      <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle selbst ein und regelt während der ganzen Aufnahme nach. Beim Start misst sie kurz das Grundrauschen – dafür am besten kurz still sein. Danach misst sie in jeder ruhigen Pause neu. War der Start gestört, etwa weil du oder die Band schon gespielt habt, senkt sie die Schwelle nach ein paar Sekunden von selbst. Wird es lauter, muss sie nichts tun: Ein Schlag zählt ohnehin nur, wenn er sich deutlich vom Geräusch direkt davor abhebt. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit. Der Regler zeigt dabei, wo die App die Schwelle gerade hat – in einem ruhigen Raum meist ganz rechts. Schaltest du Auto aus, steht er wieder auf deiner eigenen Einstellung.</p>
     </section>
 
     <section class="card">
@@ -920,6 +920,13 @@ function circMean(vals, g) {
 }
 // sensitivity slider (0..100) -> threshold multiple of the noise floor (40 .. 3)
 function sensFactor(s) { return 40 * Math.pow(3 / 40, s / 100); }
+// The slider covers 3x (100, ghost notes) to 40x (0, only strong hits) the room noise. Its sensitive end never goes
+// below an absolute floor, nor below the click when it comes from the speaker; then the span starts there and is at
+// least a factor 4 (12 dB) wide, so every slider position has an effect.
+// The level meter shows exactly this span: the mark stands where the slider is (slider left = mark right).
+function sensRange(noise, min) { const lo = Math.max(3 * noise, 0.0015, min || 0); return { lo, hi: Math.max(40 * noise, 4 * lo) }; }
+function sensThreshold(s, r) { return r.hi * Math.pow(r.lo / r.hi, Math.min(100, Math.max(0, s)) / 100); }
+function sensPos(v, r) { return v > 0 ? Math.min(100, Math.max(0, 100 * Math.log(v / r.lo) / Math.log(r.hi / r.lo))) : 0; }
 // automatic sensitivity: set once from the silence before playing – as sensitive as the room noise allows
 const AUTO_FLOOR_K = 3.45;   // in steady noise: autoThreshold ≈ 3.45 × 10th percentile of the block level
 function autoThreshold(noiseMedian, noiseP99) { return Math.max(2.5 * noiseP99, 3 * noiseMedian, 0.001); }
@@ -1708,6 +1715,7 @@ function analyzeFree3(onsets, opts) {
     const v = settings.sens, auto = settings.sensAuto;
     $('sensDesc').textContent = auto ? 'regelt nach' : v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel';
     $('sens').disabled = auto;
+    if (!auto) $('sens').value = settings.sens;      // Auto off: the slider is back at your own setting
     $('sensAuto').classList.toggle('on', auto); $('sensAuto').setAttribute('aria-pressed', String(auto));
   }
   $('sensAuto').addEventListener('click', () => { settings.sensAuto = !settings.sensAuto; saveSettings(); renderSensDesc(); applyThreshold(); });
@@ -1942,17 +1950,18 @@ function analyzeFree3(onsets, opts) {
       setTimeout(() => { if (d && d === detector) noiseFloor = d.stopNoiseMeasure(); res(); }, ms);
     });
   }
+  function clickFloor() {                       // the click over the speaker must not count as a hit
+    const sc = cal.speaker;
+    return session && session.mode === 'click' && session.output === 'speaker' && sc && sc.clickPeakPerGain ? 1.5 * sc.clickPeakPerGain * clickGain() : 0;
+  }
+  const sensSpan = () => sensRange(noiseFloor, clickFloor());   // what the slider covers and the level meter shows
   function baseThreshold() {
     if (settings.sensAuto) return autoThreshold(noiseFloor, detector && detector.noiseP99 ? detector.noiseP99 : noiseFloor);
-    return Math.max(noiseFloor * sensFactor(settings.sens), 0.0015);
+    return sensThreshold(settings.sens, sensSpan());
   }
   function applyThreshold() {
     if (!detector || phase === 'latcal' || phase === 'noise') return;
-    let min = 0;
-    const sc = cal.speaker;
-    if (session && session.mode === 'click' && session.output === 'speaker' && sc && sc.clickPeakPerGain) {
-      min = 1.5 * sc.clickPeakPerGain * clickGain();          // the click over the speaker must not count as a hit
-    }
+    const min = clickFloor();
     if (settings.sensAuto) {
       // Auto keeps measuring for as long as the microphone runs (see OnsetDetector.autoTick)
       if (!detector.autoTrack) detector.startAutoTrack(baseThreshold(), min);
@@ -2351,11 +2360,18 @@ function analyzeFree3(onsets, opts) {
     const n = mi ? mi.n : 4;
     for (let i = 0; i < n; i++) { const d = document.createElement('span'); if (i > 0 && mi && mi.starts.has(i)) d.className = 'g'; box.append(d); }
   }
-  function dbPct(v) { if (!(v > 0)) return 0; return Math.min(100, Math.max(0, (20 * Math.log10(v) + 66) / 66 * 100)); }
+  // level meter: shows the span of the sensitivity slider (left = its most sensitive end, right = only strong hits).
+  // The mark sits inside the rounded ends; the bar ends exactly at the mark's middle when the level equals the threshold.
   function renderMeter(v, thr) {
-    $('meterFill').style.width = dbPct(v) + '%';
+    const r = sensSpan(), pv = sensPos(v, r);
+    $('meterFill').style.width = pv > 0 ? `calc(5.5px + (100% - 11px) * ${(pv / 100).toFixed(4)})` : '0';
     const m = $('meterMark');
-    if (thr) { m.hidden = false; m.style.left = 'calc(' + dbPct(thr) + '% - 1px)'; } else m.hidden = true;
+    if (thr) { m.hidden = false; m.style.left = `calc(4px + (100% - 11px) * ${(sensPos(thr, r) / 100).toFixed(4)})`; } else m.hidden = true;
+    // with Auto the slider cannot be moved, but it shows where the app has put the threshold
+    if (thr && settings.sensAuto && (phase === 'session' || phase === 'monitor')) {
+      const s = String(Math.round(100 - sensPos(thr, r)));
+      if ($('sens').value !== s) $('sens').value = s;
+    }
   }
   function startRaf() { if (!rafId) rafId = requestAnimationFrame(frame); }
   function pulseShown(u) {
