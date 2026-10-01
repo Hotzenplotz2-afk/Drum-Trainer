@@ -315,6 +315,14 @@ button.hist-item { position: relative; padding-right: 28px; }
 .guide p:last-child, .guide ul:last-child, .guide ol:last-child { margin-bottom: 0; }
 .guide ul, .guide ol { margin: 0 0 8px; padding-left: 20px; }
 .guide li { margin-bottom: 5px; }
+.guide > section { scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px)); }
+.guide h3 { font-size: 14.5px; margin: 16px 0 6px; }
+.guide table.gt { width: 100%; border-collapse: collapse; margin: 4px 0 10px; font-size: 13.5px; }
+.guide table.gt th, .guide table.gt td { text-align: left; vertical-align: top; padding: 5px 6px; border-top: 1px solid var(--line); }
+.guide table.gt th { color: var(--muted); font-weight: 600; border-top: 0; }
+.guide table.gt td:first-child { font-weight: 700; white-space: nowrap; }
+.guide pre.gcode { margin: 4px 0 10px; padding: 9px 10px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guide code { font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
 .guide .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
 .guide .chip { font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
 .chip.good { background: var(--band); color: var(--good); }
@@ -529,7 +537,7 @@ button.hist-item { position: relative; padding-right: 28px; }
           <button type="button" class="btn small push" id="slPasteBtn">Liste einfügen</button>
         </div>
         <div id="slPasteBox" hidden>
-          <p class="help">In deiner Tabelle die Zeilen markieren, kopieren und hier einfügen – Spalten: Interpret, Titel, BPM, Dauer (Minuten). Zeilen mit „Pause“ werden Pausen. Oder eine exportierte Setlist mit „Datei öffnen“ laden. Die jetzige Liste wird dabei ersetzt.</p>
+          <p class="help">In deiner Tabelle die Zeilen markieren, kopieren und hier einfügen – Spalten: Interpret, Titel, BPM, Dauer (Minuten). Zeilen mit „Pause“ werden Pausen. Oder eine exportierte Setlist mit „Datei öffnen“ laden. Die jetzige Liste wird dabei ersetzt. <button type="button" class="btn tiny" data-helpto="help-files">Genaue Regeln</button></p>
           <textarea id="slPaste" rows="6" spellcheck="false" aria-label="Liste einfügen"></textarea>
           <div class="sl-tools">
             <button type="button" class="btn small fill" id="slPasteOk">Liste ersetzen</button>
@@ -583,7 +591,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.4<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.5<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -668,7 +676,7 @@ button.hist-item { position: relative; padding-right: 28px; }
         <li>Tippst du auf einen Song, übernimmt die App sein Tempo – beim freien Spielen als Zieltempo, mit Klick als Klicktempo – und die Aufnahme bekommt den Songnamen. Oben in der Aufnahme steht der gewählte Song, mit <b>‹</b> und <b>›</b> springst du zum vorherigen oder nächsten Song der Liste.</li>
         <li>Unter jedem Song steht, wie oft er aufgenommen wurde und das letzte Ergebnis.</li>
         <li>Mit <b>Bearbeiten</b> erscheint rechts an jeder Zeile ein Griff (⠿). Daran ziehst du Songs und Pausen an ihre neue Stelle. Antippen einer Zeile öffnet sie zum Ändern oder Löschen, dort fügst du auch Songs oder Pausen ein. Eine Pause trennt zwei Sets. Gibst du ihr einen Namen (etwa „Zugabe“), wird daraus eine eigene Überschrift, deren Songs nicht zu den Sets zählen.</li>
-        <li><b>Als Datei exportieren</b> speichert die Setlist als Tabelle (CSV), die Excel öffnen kann. Zurück in die App kommt sie unter Bearbeiten → <b>Liste einfügen</b>: entweder die Datei öffnen oder Zeilen aus deiner Tabelle kopieren und einfügen (Interpret, Titel, BPM, Dauer). Zeilen mit „Pause“ werden Pausen.</li>
+        <li>Wie du die Setlist als Datei sicherst oder aus deiner Tabelle übernimmst, steht genau unter <b>8. Export und Import</b>.</li>
       </ul>
     </section>
 
@@ -686,22 +694,67 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>7. Verlauf und Export</h2>
+      <h2>7. Verlauf</h2>
       <ul>
         <li>Jede Aufnahme wird im Browser gespeichert, die letzten 60. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
         <li>Mit <b>Benennen</b> oben in der Auswertung gibst du einer Aufnahme einen Namen, etwa den Songtitel. Er steht dann im Verlauf und in exportierten Dateien.</li>
-        <li><b>Als Datei exportieren</b> (unten in der Auswertung) speichert eine Aufnahme als Datei, etwa als Sicherung. <b>Datei öffnen</b> im Verlauf holt sie zurück – auch auf einem anderen Gerät.</li>
-        <li>Die Aufnahmen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg.</li>
+        <li>Aufnahmen, Setlist und Einstellungen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg. Zur Sicherung kannst du sie als Datei exportieren – siehe <b>8. Export und Import</b>.</li>
       </ul>
     </section>
 
+    <section class="card" id="help-files">
+      <h2>8. Export und Import</h2>
+      <p>Es gibt zwei Arten von Dateien: die <b>Setlist</b> als Tabelle (CSV) und einzelne <b>Aufnahmen</b> (JSON). Beide bleiben auf deinem Handy, bis du sie selbst weitergibst – die App lädt nichts hoch. Exportierte Dateien landen im Download-Ordner des Handys (z. B. in „Eigene Dateien“ → „Downloads“).</p>
+
+      <h3>Setlist exportieren</h3>
+      <p>Setlist → ganz unten <b>Als Datei exportieren</b>. Die Datei heißt <code>setlist-JJJJ-MM-TT.csv</code>. Das ist eine Tabelle als Text: eine Zeile pro Song, die Spalten durch Semikolon getrennt, Umlaute bleiben erhalten. Die erste Zeile enthält die Spaltennamen.</p>
+      <table class="gt">
+        <tr><th>Spalte</th><th>Inhalt</th></tr>
+        <tr><td>Interpret</td><td>Band oder Künstler, darf leer sein</td></tr>
+        <tr><td>Titel</td><td>Songtitel</td></tr>
+        <tr><td>BPM</td><td>ganze Zahl von 30 bis 300; leer = ohne Tempo</td></tr>
+        <tr><td>Dauer</td><td>Minuten mit Komma, z. B. 3,5 = 3 min 30 s; darf leer sein</td></tr>
+      </table>
+      <p>Eine Pause steht als eigene Zeile mit „Pause 1“, „Pause 2“ … in der Spalte Titel, eine benannte Überschrift als „Pause: Weitere Songs“. Ein Beispiel:</p>
+      <pre class="gcode">Interpret;Titel;BPM;Dauer
+Joe Bonamassa;Blue And Evil;90;9
+Jimi Hendrix;Foxy Lady;90;7
+;Pause 1;;
+The Cold Stares;Throw That Stone;;3
+;Pause: Weitere Songs;;
+Gary Clark Jr.;Come Together;80;</pre>
+
+      <h3>Setlist importieren</h3>
+      <ol>
+        <li>Setlist → <b>Bearbeiten</b> → <b>Liste einfügen</b>.</li>
+        <li>Entweder <b>Datei öffnen</b> und eine Setlist-Datei (.csv) wählen – oder in deiner Tabelle (z. B. Excel) die Zeilen markieren, kopieren und ins Textfeld einfügen.</li>
+        <li><b>Liste ersetzen</b> tippen und zur Sicherheit ein zweites Mal. Die ganze Liste wird ersetzt, nicht ergänzt.</li>
+      </ol>
+      <p>So liest die App die Zeilen:</p>
+      <ul>
+        <li>Spalten in der Reihenfolge <b>Interpret, Titel, BPM, Dauer</b>. Aus einer Tabelle kopierte Zellen und Dateien mit Semikolon werden beide erkannt. Eine Zeile ohne Spalten wird als „Interpret – Titel“ gelesen, sonst als Titel.</li>
+        <li>Die Kopfzeile (mit „Titel“ und „Interpret“ oder „BPM“) und leere Zeilen werden übersprungen.</li>
+        <li>Steht in einer Zeile nur „Pause“ (auch „Pause 2“), wird daraus eine Pause zwischen zwei Sets. „Pause: Zugabe“ wird eine Überschrift „Zugabe“; ihre Songs zählen nicht zu den Sets.</li>
+        <li>BPM: ganze Zahl von 30 bis 300. „-“ oder leer heißt ohne Tempo – die App erkennt es dann selbst.</li>
+        <li>Dauer in Minuten: „3,5“, „3.5“ oder „3:30“; leer ist erlaubt.</li>
+        <li>Titel und Interpret höchstens 60 Zeichen, längere werden gekürzt.</li>
+        <li>Songs mit gleichem Interpret und Titel behalten ihre Aufnahmen („2× aufgenommen …“).</li>
+      </ul>
+
+      <h3>Aufnahme exportieren</h3>
+      <p>Auswertung → ganz unten <b>Als Datei exportieren</b>. Der Dateiname enthält die Art, den Namen und die Zeit der Aufnahme, z. B. <code>drum-frei-blue-and-evil-2026-10-01-1930.json</code> (mit Klick: <code>drum-klick-…</code>). In der Datei stehen die Zeitpunkte aller erkannten Schläge, mit Klick auch die Klicks, dazu Tempo, Takt, Übung und Name – <b>kein Ton</b>. Das Format ist für die App selbst gedacht, als Sicherung oder für ein anderes Gerät, nicht für Excel.</p>
+
+      <h3>Aufnahme öffnen</h3>
+      <p>Verlauf → <b>Datei öffnen</b> → die .json-Datei wählen. Die App wertet die Aufnahme neu aus und legt sie im Verlauf ab; war sie schon dort, wird sie nur geöffnet. Andere Dateien lehnt sie ab.</p>
+    </section>
+
     <section class="card">
-      <h2>8. Als App auf dem Startbildschirm</h2>
+      <h2>9. Als App auf dem Startbildschirm</h2>
       <p>Unter <b>Einstellungen → Als App nutzen</b> auf <b>App installieren</b> tippen. Erscheint der Knopf nicht, geht es auch über das Chrome-Menü (⋮): „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Nach dem ersten Öffnen läuft die App auch ohne Internet, etwa im Proberaum. Ist Internet da, lädt sie beim Start automatisch die neueste Version.</p>
     </section>
 
     <section class="card">
-      <h2>9. Gut zu wissen</h2>
+      <h2>10. Gut zu wissen</h2>
       <ul>
         <li>Die App versucht, den Bildschirm während der Aufnahme anzulassen. Wechselst du die App oder geht der Bildschirm doch aus, stoppt die Aufnahme und wird bis dahin ausgewertet und gespeichert.</li>
         <li>In der Bandprobe hört das Mikrofon alle Instrumente. Die Tempokurve funktioniert trotzdem; die Werte einzelner Schläge sind beim Üben allein aussagekräftiger.</li>
@@ -3515,7 +3568,7 @@ function analyzeFree3(onsets, opts) {
   $('slPasteOk').addEventListener('click', () => {
     const b = $('slPasteOk');
     const items = parseSetlistText($('slPaste').value);
-    const nSongs = items.filter(x => x.t === 's').length, nP = items.length - nSongs;
+    const nSongs = items.filter(x => x.t === 's').length, nP = items.filter(x => x.t === 'p' && !x.label).length, nH = items.filter(x => x.t === 'p' && x.label).length;
     if (!nSongs) { slMsg('Keine Songs erkannt. Erwartet werden Zeilen mit Interpret, Titel, BPM und Dauer.'); return; }
     if (setlist.some(x => x.t === 's') && !b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = `Nochmal tippen: ${nSongs} Songs übernehmen`; return; }
     // songs that were already in the list keep their id, so their recordings stay linked
@@ -3525,7 +3578,7 @@ function analyzeFree3(onsets, opts) {
     if (settings.songId && !currentSong()) { settings.songId = null; saveSettings(); }
     renderSongChip();
     $('slPaste').value = ''; $('slPasteBox').hidden = true; resetArm(b, 'Liste ersetzen');
-    slMsg(`Liste übernommen: ${nSongs} Songs` + (nP ? `, ${nP} ${nP === 1 ? 'Pause' : 'Pausen'}` : '') + '.');
+    slMsg(`Liste übernommen: ${nSongs} Songs` + (nP ? `, ${nP} ${nP === 1 ? 'Pause' : 'Pausen'}` : '') + (nH ? `, ${nH} ${nH === 1 ? 'Überschrift' : 'Überschriften'}` : '') + '.');
     renderSetlist();
   });
   function setlistCsv() {
@@ -3762,6 +3815,11 @@ function analyzeFree3(onsets, opts) {
   }
   $('helpBtn').addEventListener('click', () => openHelp());
   $('openHelp2').addEventListener('click', () => openHelp());
+  document.querySelectorAll('[data-helpto]').forEach(b => b.addEventListener('click', () => {
+    openHelp();
+    const t = $(b.dataset.helpto);
+    if (t) requestAnimationFrame(() => { try { t.scrollIntoView({ block: 'start' }); } catch (e) { /* ignore */ } });
+  }));
   $('helpBack').addEventListener('click', () => closeHelp());
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && helpOpen) closeHelp(); });
   window.addEventListener('popstate', (e) => {
