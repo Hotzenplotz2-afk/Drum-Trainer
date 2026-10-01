@@ -1,7 +1,7 @@
 // Drum Timing Trainer – offline support.
 // The page itself: network first (so a new upload shows up on the next start), cached copy when offline.
 // Icons and manifest: from the cache.
-const CACHE = 'dtt-v6';
+const CACHE = 'dtt-v7';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -23,8 +23,9 @@ function networkFirst(request, key) {
     // no-cache: ask the server every time (cheap if nothing changed), so a new upload shows up at the next start
     fetch(new Request(request.url, { cache: 'no-cache', credentials: 'same-origin' })).then((res) => {
       clearTimeout(timer);
-      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
-      finish(res);
+      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); finish(res); return; }
+      // server error (e.g. GitHub down): rather the stored app than an error page
+      caches.match(key).then((r) => { if (!done) { done = true; resolve(r || res); } });
     }).catch(() => {
       clearTimeout(timer);
       caches.match(key).then((r) => { if (!done) { done = true; resolve(r || Response.error()); } });

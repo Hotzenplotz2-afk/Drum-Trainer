@@ -591,7 +591,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.5<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.6<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -664,7 +664,7 @@ button.hist-item { position: relative; padding-right: 28px; }
       <ul>
         <li>Ohne Klick: Die App erkennt das Tempo aus deinem Groove und zeichnet eine Tempokurve.</li>
         <li>Pausen über 4 Sekunden trennen Songs. Jeder Abschnitt wird einzeln ausgewertet. Wechselt das Tempo ohne lange Pause, folgt die Kurve nach ein paar Sekunden.</li>
-        <li>Kennst du das Tempo des Songs, stell ein <b>Zieltempo</b> ein. Dann zeigt die Kurve die Abweichung davon, und die App verwechselt es kaum noch mit dem halben oder doppelten.</li>
+        <li>Kennst du das Tempo des Songs, stell ein <b>Zieltempo</b> ein. Dann zeigt die Kurve die Abweichung davon, und die App verwechselt es kaum noch mit dem halben oder doppelten. Spielst du etwas langsamer oder schneller als das Ziel, etwa zum Üben, stimmt die Messung trotzdem. Liegst du um mehr als etwa ein Viertel daneben, kann sich die App verzählen – dann das Zieltempo anpassen oder ausschalten.</li>
         <li>Zeigt die Auswertung das halbe oder doppelte Tempo, tippe auf <b>Tempo halbieren</b> bzw. <b>Tempo verdoppeln</b>.</li>
       </ul>
     </section>
@@ -696,7 +696,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>7. Verlauf</h2>
       <ul>
-        <li>Jede Aufnahme wird im Browser gespeichert, die letzten 60. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
+        <li>Jede Aufnahme wird im Browser gespeichert, die letzten 200. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
         <li>Mit <b>Benennen</b> oben in der Auswertung gibst du einer Aufnahme einen Namen, etwa den Songtitel. Er steht dann im Verlauf und in exportierten Dateien.</li>
         <li>Aufnahmen, Setlist und Einstellungen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg. Zur Sicherung kannst du sie als Datei exportieren – siehe <b>8. Export und Import</b>.</li>
       </ul>
@@ -732,7 +732,7 @@ Gary Clark Jr.;Come Together;80;</pre>
       </ol>
       <p>So liest die App die Zeilen:</p>
       <ul>
-        <li>Spalten in der Reihenfolge <b>Interpret, Titel, BPM, Dauer</b>. Aus einer Tabelle kopierte Zellen und Dateien mit Semikolon werden beide erkannt. Eine Zeile ohne Spalten wird als „Interpret – Titel“ gelesen, sonst als Titel.</li>
+        <li>Spalten in der Reihenfolge <b>Interpret, Titel, BPM, Dauer</b>. Aus einer Tabelle kopierte Zellen und Dateien mit Semikolon oder Komma werden erkannt. Eine Zeile ohne Spalten wird als „Interpret – Titel“ gelesen, sonst als Titel.</li>
         <li>Die Kopfzeile (mit „Titel“ und „Interpret“ oder „BPM“) und leere Zeilen werden übersprungen.</li>
         <li>Steht in einer Zeile nur „Pause“ (auch „Pause 2“), wird daraus eine Pause zwischen zwei Sets. „Pause: Zugabe“ wird eine Überschrift „Zugabe“; ihre Songs zählen nicht zu den Sets.</li>
         <li>BPM: ganze Zahl von 30 bis 300. „-“ oder leer heißt ohne Tempo – die App erkennt es dann selbst.</li>
@@ -1241,6 +1241,13 @@ function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
 const T_MIN = 55, T_MAX = 200, T_STEP = 1.01;
 const FREE_JUMP = 12;   // cost of an abrupt tempo change in the free analysis (tested: 8 too eager on messy material, 16+ misses changes)
 const T_GRID = (() => { const a = []; for (let t = T_MIN; t <= T_MAX; t *= T_STEP) a.push(t); return a; })();
+// a target tempo outside the analysis range (55–200) is analysed one or more octaves inside it and scaled back
+function targetInGrid(target) { let t = target, f = 1; while (t > T_MAX) { t /= 2; f *= 2; } while (t < T_MIN) { t *= 2; f /= 2; } return { t, f }; }
+// How strictly a target tempo counts (width of the preference around it, in octaves). It decides between half and
+// double reliably, but it must not force the reading to 2/3 or 4/3 of the played tempo when the target is somewhat
+// off (practising slower than the song, or the previous song still chosen). 0.25 did that from ~20 % off; 0.45 holds
+// to about -25 % / +30 % (simulation + rehearsal recording) and keeps 12/8 and 6/8 at the dotted quarter.
+const TARGET_SIGMA = 0.45;
 function tempoPrior(center, sigmaOct) { return T_GRID.map(t => { const z = Math.log2(t / center) / sigmaOct; return Math.exp(-0.5 * z * z); }); }
 
 // Periodicity scores for every candidate tempo in T_GRID, from onsets inside [a, b].
@@ -1316,8 +1323,9 @@ function analyzeFree3(onsets, opts) {
   if (onsets.length < 16) return res;
   const ts = onsets.map(o => o.t);
   const { ws, ss } = onsetWeights(onsets.map(o => o.strength || o.peak || 1));
-  const prior = tempoPrior(opts.target || 130, opts.target ? 0.25 : 0.9);
-  const scale = opts.scale || 1;
+  const tg = opts.target ? targetInGrid(opts.target) : null;
+  const prior = tempoPrior(tg ? tg.t : 130, tg ? TARGET_SIGMA : 0.9);
+  const scale = (opts.scale || 1) * (tg ? tg.f : 1);
   // split into segments at pauses
   const segs = []; let s0 = 0;
   for (let i = 1; i <= ts.length; i++) if (i === ts.length || ts[i] - ts[i - 1] > 4) { segs.push([s0, i]); s0 = i; }
@@ -1666,6 +1674,7 @@ function analyzeFree3(onsets, opts) {
     const vals = []; for (let v = Math.ceil(lo / 5) * 5; v <= 300; v += 5) vals.push(v);
     if (!vals.length || vals[0] !== lo) vals.unshift(lo);
     const want = Math.max(lo, Math.min(300, settings.stMax));
+    if (settings.stMax !== want) { settings.stMax = want; saveSettings(); }      // what the list shows is what the stair uses
     if (!vals.includes(want)) { vals.push(want); vals.sort((a, b) => a - b); }
     sel.textContent = '';
     vals.forEach(v => { const o = document.createElement('option'); o.value = String(v); o.textContent = String(v); sel.append(o); });
@@ -2055,8 +2064,6 @@ function analyzeFree3(onsets, opts) {
     const mode = settings.mode, output = settings.output;
     $('leakWarn').hidden = true;
     $('tlSub').hidden = true;
-    if (currentRec) { currentRec = null; renderHistory(); }
-    setEvalState('recording');
     resetLive();
     setLockedUI(true);
     if (currentTab !== 'rec') showTab('rec');
@@ -2084,6 +2091,8 @@ function analyzeFree3(onsets, opts) {
     const song = currentSong();
     session.songId = song ? song.id : null; session.songName = song ? song.n : null;
     phase = 'session';
+    if (currentRec) { currentRec = null; renderHistory(); }     // only now: a cancelled start keeps the last evaluation
+    setEvalState('recording');
     applyThreshold();
     lastResult = null;
     if (mode === 'click') {
@@ -2091,7 +2100,8 @@ function analyzeFree3(onsets, opts) {
       TL.reset('dev', { showBias: session.calibrated, relative: !session.calibrated, bands: session.bands, marks: session.marks });
     } else {
       session.t0 = ctx.currentTime;
-      session.prior = tempoPrior(target || 130, target ? 0.25 : 0.9);
+      const tg = target ? targetInGrid(target) : null;
+      session.prior = tempoPrior(tg ? tg.t : 130, tg ? TARGET_SIGMA : 0.9); session.liveF = tg ? tg.f : 1;
       setStatus('Läuft – spiel los.');
       TL.reset('tempo', { ref: target, refLabel: target ? 'Zieltempo' : 'Start' });
     }
@@ -2108,7 +2118,10 @@ function analyzeFree3(onsets, opts) {
     session = null;
     finishIdle();
     setStatus(reason === 'hidden' ? 'Gestoppt, weil die Seite in den Hintergrund ging.' : 'Gestoppt.');
-    if (wasSession && s) finishSession(s);
+    if (!wasSession || !s) return;
+    if (reason === 'hidden') { finishSession(s); return; }
+    setStatus('Gestoppt – wird ausgewertet …');
+    setTimeout(() => { finishSession(s); if (statusText === 'Gestoppt – wird ausgewertet …') setStatus('Gestoppt.'); }, 40);
   }
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) return;
@@ -2288,7 +2301,7 @@ function analyzeFree3(onsets, opts) {
     const T = liveTempo(s.fts, s.fpk, tr, s.livePrev, s.prior, s.secStart);
     if (!T) return;
     s.livePrev = T;
-    s.liveHist.push(T); if (s.liveHist.length > 3) s.liveHist.shift();
+    s.liveHist.push(T * (s.liveF || 1)); if (s.liveHist.length > 3) s.liveHist.shift();
     const Ts = median(s.liveHist);
     if (s.startTempo === null && tr - (s.secStart || 0) > 10) { s.startTempo = Ts; if (!s.target) TL.addRef(s.secStart || 0, Ts, 'Start'); }
     const ref = s.target || s.startTempo;
@@ -3174,7 +3187,7 @@ function analyzeFree3(onsets, opts) {
   $('octDouble').addEventListener('click', () => octave(2));
 
   // ---------- history ----------
-  const HIST_MAX = 60;
+  const HIST_MAX = 200;
   function histGet() { const h = store.get(K_HIST, []); return Array.isArray(h) ? h.filter(e => e && typeof e.d === 'number') : []; }
   function histSet(h) { store.set(K_HIST, h); renderHistory(); }
   function addHistory(e) {
@@ -3270,7 +3283,8 @@ function analyzeFree3(onsets, opts) {
     const x = Number(String(v == null ? '' : v).trim().replace(',', '.'));
     return Number.isFinite(x) && x >= 30 && x <= 300 ? Math.round(x) : null;
   }
-  const newId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  let idSeq = 0;
+  const newId = () => 'i' + Date.now().toString(36) + (idSeq++).toString(36) + Math.random().toString(36).slice(2, 6);
   function slMsg(t) { $('slMsg').textContent = t; $('slMsg').hidden = !t; }
   // latest result per song, from the history
   function songStats() {
@@ -3289,7 +3303,7 @@ function analyzeFree3(onsets, opts) {
   }
   function el(tag, cls, text) { const x = document.createElement(tag); if (cls) x.className = cls; if (text != null) x.textContent = text; return x; }
   function renderSetlist() {
-    const list = $('slList'); if (!list) return;
+    const list = $('slList'); if (!list || slDrag) return;
     list.textContent = '';
     const busyNow = setupLocked();
     $('slEditBtn').textContent = slEditing ? 'Fertig' : 'Bearbeiten';
@@ -3324,7 +3338,7 @@ function analyzeFree3(onsets, opts) {
         if (slEditing) { const row = el('button', 'sl-row sep'); row.type = 'button'; row.dataset.id = g.sep.id; row.dataset.drag = '1'; row.append(d, grip()); list.append(row); } else list.append(d);
         addEditor(g.sep);
       }
-      if (!g.items.length && !named && g.sep) return;
+      if (!g.items.length && !named) return;
       if (!named) setNo++;
       const dur = g.items.reduce((a, x) => a + (x.dur || 0), 0);
       const h = el('div', 'sl-set', named ? g.sep.label : `Set ${setNo}`);
@@ -3403,7 +3417,10 @@ function analyzeFree3(onsets, opts) {
     else if (f === 'dur') it.dur = parseMinutes(v);
     else if (f === 'label') it.label = cleanText(v, 40);
     saveSetlist();
-    if (it.id === settings.songId) renderSongChip();
+    if (it.id === settings.songId) {
+      if (f === 'bpm' && !setupLocked()) { if (it.bpm) settings.bpm = clampInt(it.bpm, 30, 300, settings.bpm); settings.ftarget = !!it.bpm; saveSettings(); renderSetup(); }
+      renderSongChip();
+    }
   });
   $('slList').addEventListener('click', (ev) => {
     const actBtn = ev.target.closest('[data-act]');
@@ -3463,9 +3480,12 @@ function analyzeFree3(onsets, opts) {
     const g = ev.target.closest('.sl-grip'); if (!g) return;
     ev.preventDefault();
     let id = g.closest('[data-id]').dataset.id;
-    if (slOpen) {                                   // close an open editor first, the list is drawn again
+    if (slOpen) {                                   // close an open editor first, the list is drawn again …
+      const top0 = g.closest('[data-id]').getBoundingClientRect().top;
       const it = setlist.find(x => x.id === slOpen); if (it && it.t === 's' && !it.n) it.n = 'Ohne Titel';
       slOpen = null; saveSetlist(); renderSetlist();
+      const r2 = $('slList').querySelector(`[data-drag][data-id="${id}"]`);
+      if (r2) window.scrollBy(0, r2.getBoundingClientRect().top - top0);   // … and the touched row stays under the finger
     }
     const row = $('slList').querySelector(`[data-drag][data-id="${id}"]`); if (!row) return;
     const handle = row.querySelector('.sl-grip');
@@ -3482,7 +3502,7 @@ function analyzeFree3(onsets, opts) {
     cancelAnimationFrame(d.raf);
     document.body.classList.remove('sl-dragmode');
     const cancel = ev && ev.type === 'pointercancel';
-    if (!cancel && d.j != null) {
+    if (!cancel && d.moved && d.j != null) {
       const item = setlist.find(x => x.id === d.id), rest = setlist.filter(x => x.id !== d.id);
       let at = d.j < d.rows.length ? rest.findIndex(x => x.id === d.rows[d.j].dataset.id) : rest.length;
       if (at < 0) at = rest.length;
@@ -3530,10 +3550,14 @@ function analyzeFree3(onsets, opts) {
   }
   function parseSetlistText(text) {
     const out = [];
-    String(text || '').replace(/^\ufeff/, '').split(/\r?\n/).forEach(raw => {
-      const line = raw.replace(/\u00a0/g, ' ');
+    const lines = String(text || '').replace(/^\ufeff/, '').split(/\r?\n/).map(l => l.replace(/\u00a0/g, ' '));
+    const full = lines.filter(l => l.trim());
+    // one separator for the whole text: copied cells (tab), a CSV file with semicolons, or one with commas
+    const sep = full.some(l => l.includes('\t')) ? '\t' : full.some(l => l.includes(';')) ? ';'
+      : full.length && full[0].includes(',') && full.filter(l => l.includes(',')).length * 2 >= full.length ? ',' : null;
+    lines.forEach(line => {
       if (!line.trim()) return;
-      let cells = line.includes('\t') ? splitRow(line, '\t') : line.includes(';') ? splitRow(line, ';') : [line];
+      let cells = sep && line.includes(sep) ? splitRow(line, sep) : [line];
       cells = cells.map(c => c.trim());
       while (cells.length && !cells[cells.length - 1]) cells.pop();
       const filled = cells.filter(Boolean);
@@ -3587,7 +3611,7 @@ function analyzeFree3(onsets, opts) {
     let pauseNo = 0;
     setlist.forEach(x => {
       if (x.t === 'p') rows.push(';' + q(x.label ? `Pause: ${x.label}` : `Pause ${++pauseNo}`) + ';;');
-      else rows.push([q(x.a), q(x.n), x.bpm || '', x.dur != null ? fmtMin(x.dur) : ''].join(';'));
+      else rows.push([q(x.a), q(x.n), x.bpm || '', x.dur != null ? String(Math.round(x.dur * 100) / 100).replace('.', ',') : ''].join(';'));
     });
     return '\ufeff' + rows.join('\r\n') + '\r\n';
   }
@@ -3731,10 +3755,12 @@ function analyzeFree3(onsets, opts) {
     rd.onload = () => {
       let rec;
       try { rec = recFromExport(JSON.parse(String(rd.result))); } catch (e) { histMsg('Diese Datei ist keine Aufnahme vom Drum Timing Trainer.'); return; }
-      const known = histGet().some(x => x.d === rec.started);
+      const h = histGet(), known = h.some(x => x.d === rec.started);
+      const tooOld = !known && h.length >= HIST_MAX && rec.started < h[h.length - 1].d;   // would drop out of the history at once
       resetLive();
-      const entry = showRec(rec, known ? 'none' : 'add');
-      if (entry) { saveRec(rec); histMsg(known ? 'Diese Aufnahme war schon im Verlauf – sie ist jetzt geöffnet.' : 'Aufnahme geöffnet und im Verlauf gespeichert.'); }
+      const entry = showRec(rec, known || tooOld ? 'none' : 'add');
+      if (entry && tooOld) histMsg(`Aufnahme geöffnet. Sie ist älter als alle ${HIST_MAX} Aufnahmen im Verlauf und wurde deshalb nicht dort gespeichert.`);
+      else if (entry) { saveRec(rec); histMsg(known ? 'Diese Aufnahme war schon im Verlauf – sie ist jetzt geöffnet.' : 'Aufnahme geöffnet und im Verlauf gespeichert.'); }
       else histMsg('In dieser Aufnahme sind zu wenige Schläge für eine Auswertung.');
       if (entry) showTab('eval', { top: true });
     };
@@ -3871,7 +3897,7 @@ function analyzeFree3(onsets, opts) {
   });
   if ('serviceWorker' in navigator && window.isSecureContext) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').then((reg) => { renderInstall(true); try { reg.update(); } catch (e) { /* ignore */ } }).catch(() => renderInstall(false));
+      navigator.serviceWorker.register('sw.js').then((reg) => { renderInstall(true); try { const u = reg.update(); if (u && u.catch) u.catch(() => {}); } catch (e) { /* ignore */ } }).catch(() => renderInstall(false));   // update fails while offline or when the server has a problem – no matter
       // a new version was installed while the app starts: show it right away (only if nothing is running yet)
       const hadController = !!navigator.serviceWorker.controller, openedAt = Date.now();
       navigator.serviceWorker.addEventListener('controllerchange', () => {
