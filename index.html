@@ -591,7 +591,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.7<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 5.8<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -634,7 +634,8 @@ button.hist-item { position: relative; padding-right: 28px; }
         <li>Beim ersten Start fragt der Browser nach dem Mikrofon – erlauben.</li>
         <li>Empfindlichkeit einstellen: Unter <b>Aufnahme</b> neben „Mikrofonpegel“ auf <b>Testen</b> tippen, kurz still sein, dann ein paar Schläge spielen. Jeder erkannte Schlag lässt den Punkt daneben aufleuchten und wird gezählt.</li>
       </ol>
-      <p>Der Strich im Pegel ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Er steht dort, wo der Regler steht, nur spiegelverkehrt: Regler ganz links (nur kräftige Schläge) heißt Strich ganz rechts, Regler ganz rechts (auch Ghost Notes) heißt Strich ganz links, knapp über dem Grundrauschen. Der Balken zeigt deinen Pegel in genau diesem Bereich. Ist er ganz voll, liegt der Schlag über jeder Einstellung. Fehlen leise Schläge, schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme. Kommt der Klick aus dem Lautsprecher, beginnt der Bereich knapp über dem Klick, damit er nicht als Schlag zählt.</p>
+      <p>Der Balken zeigt deinen Pegel: links beginnt er knapp über dem Grundrauschen, ganz rechts ist die Vollaussteuerung. Der Strich ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Er steht dort, wo der Regler steht, nur spiegelverkehrt: Regler ganz rechts (auch Ghost Notes) heißt Strich ganz links; je weiter du den Regler nach links schiebst, desto lauter muss ein Schlag sein. Fehlen leise Schläge, schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme.</p>
+      <p>Läuft ein Metronom aus einem anderen Gerät mit, stell den Strich rechts von seinen kleinen Ausschlägen und links von deinen Schlägen ein. Sind deine leisesten Noten so laut wie das Metronom, geht beides nicht zugleich – dann das Metronom leiser stellen oder weiter weg. Kommt der Klick aus dem Lautsprecher der App, beginnt der Bereich knapp über dem Klick, damit er nicht als Schlag zählt.</p>
       <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle selbst ein und regelt während der ganzen Aufnahme nach. Beim Start misst sie kurz das Grundrauschen – dafür am besten kurz still sein. Danach misst sie in jeder ruhigen Pause neu. War der Start gestört, etwa weil du oder die Band schon gespielt habt, senkt sie die Schwelle nach ein paar Sekunden von selbst. Wird es lauter, muss sie nichts tun: Ein Schlag zählt ohnehin nur, wenn er sich deutlich vom Geräusch direkt davor abhebt. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit. Der Regler zeigt dabei, wo die App die Schwelle gerade hat – in einem ruhigen Raum meist ganz rechts. Schaltest du Auto aus, steht er wieder auf deiner eigenen Einstellung.</p>
     </section>
 
@@ -920,11 +921,12 @@ function circMean(vals, g) {
 }
 // sensitivity slider (0..100) -> threshold multiple of the noise floor (40 .. 3)
 function sensFactor(s) { return 40 * Math.pow(3 / 40, s / 100); }
-// The slider covers 3x (100, ghost notes) to 40x (0, only strong hits) the room noise. Its sensitive end never goes
-// below an absolute floor, nor below the click when it comes from the speaker; then the span starts there and is at
-// least a factor 4 (12 dB) wide, so every slider position has an effect.
-// The level meter shows exactly this span: the mark stands where the slider is (slider left = mark right).
-function sensRange(noise, min) { const lo = Math.max(3 * noise, 0.0015, min || 0); return { lo, hi: Math.max(40 * noise, 4 * lo) }; }
+// The slider and the level meter cover the same range: from just above the room noise (slider 100, meter left) up to
+// full scale (slider 0, meter right), linear in dB. So the mark stands exactly where the slider is (mirrored), and it
+// can be put between a background sound (e.g. a metronome) and your hits, however loud the phone hears them.
+// The sensitive end never goes below an absolute floor, nor below the click when it comes from the speaker.
+// (Up to version 5.7 the slider only reached 40x the room noise – at the pad in a quiet room every hit was louder.)
+function sensRange(noise, min) { const lo = Math.max(3 * noise, 0.0015, min || 0); return { lo, hi: Math.max(1, 4 * lo) }; }
 function sensThreshold(s, r) { return r.hi * Math.pow(r.lo / r.hi, Math.min(100, Math.max(0, s)) / 100); }
 function sensPos(v, r) { return v > 0 ? Math.min(100, Math.max(0, 100 * Math.log(v / r.lo) / Math.log(r.hi / r.lo))) : 0; }
 // automatic sensitivity: set once from the silence before playing – as sensitive as the room noise allows
@@ -1507,7 +1509,10 @@ function analyzeFree3(onsets, opts) {
     bpm: clampInt(saved.bpm, 30, 300, 100),
     sub: [0, 1, 2, 3, 4].includes(saved.sub) ? saved.sub : 0,
     output: saved.output === 'speaker' ? 'speaker' : 'headphones',
-    sens: clampInt(saved.sens, 0, 100, 55),
+    // sensitivity scale 2 (version 5.8): the slider now reaches up to full scale. An older setting is moved so that it
+    // gives about the same threshold as before (old 55 -> 81), then you can go further to the left.
+    sens: saved.sensV === 2 ? clampInt(saved.sens, 0, 100, 81) : clampInt(100 - (100 - clampInt(saved.sens, 0, 100, 55)) * 0.42, 0, 100, 81),
+    sensV: 2,
     clickVol: clampInt(saved.clickVol, 5, 100, 70),
     ftarget: saved.ftarget === true,
     theme: ['auto', 'light', 'dark'].includes(saved.theme) ? saved.theme : 'auto',
@@ -1713,13 +1718,13 @@ function analyzeFree3(onsets, opts) {
   document.querySelectorAll('[data-ftarget]').forEach(b => b.addEventListener('click', () => { if (setupLocked()) return; settings.ftarget = b.dataset.ftarget === '1'; saveSettings(); renderSetup(); }));
   function renderSensDesc() {
     const v = settings.sens, auto = settings.sensAuto;
-    $('sensDesc').textContent = auto ? 'regelt nach' : v <= 30 ? 'nur kräftige Schläge' : v >= 70 ? 'auch Ghost Notes' : 'mittel';
+    $('sensDesc').textContent = auto ? 'regelt nach' : v <= 45 ? 'nur kräftige Schläge' : v >= 75 ? 'auch Ghost Notes' : 'mittel';
     $('sens').disabled = auto;
     if (!auto) $('sens').value = settings.sens;      // Auto off: the slider is back at your own setting
     $('sensAuto').classList.toggle('on', auto); $('sensAuto').setAttribute('aria-pressed', String(auto));
   }
   $('sensAuto').addEventListener('click', () => { settings.sensAuto = !settings.sensAuto; saveSettings(); renderSensDesc(); applyThreshold(); });
-  $('sens').addEventListener('input', (e) => { settings.sens = clampInt(e.target.value, 0, 100, 55); saveSettings(); applyThreshold(); renderSensDesc(); });
+  $('sens').addEventListener('input', (e) => { settings.sens = clampInt(e.target.value, 0, 100, 81); saveSettings(); applyThreshold(); renderSensDesc(); });
   $('clickVol').addEventListener('input', (e) => {
     settings.clickVol = clampInt(e.target.value, 5, 100, 70); saveSettings();
     if (clickBus && ctx) clickBus.gain.setTargetAtTime(clickGain(), ctx.currentTime, 0.02);
