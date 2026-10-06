@@ -70,6 +70,7 @@ svg.ic { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-wid
 .tabbar button.on .ti { background: var(--accent-soft); color: var(--accent); }
 .tabbar .tdot { position: absolute; top: 7px; left: calc(50% + 14px); width: 9px; height: 9px; border-radius: 50%; background: var(--bad); border: 2px solid var(--panel); display: none; }
 .tabbar button.recording .tdot { display: block; }
+.tabbar button.playing .tdot { display: block; background: var(--accent); }
 
 /* ---------- pages ---------- */
 .wrap { max-width: 520px; margin: 0 auto; padding: 14px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom, 0px)); }
@@ -328,6 +329,44 @@ button.hist-item { position: relative; padding-right: 28px; }
 .chip.good { background: var(--band); color: var(--good); }
 .chip.warn { background: rgba(227,168,87,.22); color: var(--warn); }
 .chip.bad { background: rgba(234,122,112,.26); color: var(--bad); }
+
+/* ---------- metronome ---------- */
+.metro { text-align: center; padding-top: 12px; }
+.metro .song-chip { text-align: left; margin: 0 0 10px; }
+.m-beats { display: flex; justify-content: center; align-items: flex-end; gap: 5px; height: 58px; margin: 2px 0 0; }
+.m-beat { flex: 1 1 0; max-width: 46px; height: 100%; border: 0; background: none; padding: 0; display: flex; align-items: flex-end; justify-content: center; border-radius: 8px; }
+.m-beat i { display: block; width: 72%; max-width: 30px; border-radius: 7px; background: var(--accent); transition: transform .07s ease; }
+.m-beat[data-l="3"] i { height: 52px; }
+.m-beat[data-l="2"] i { height: 34px; opacity: .72; }
+.m-beat[data-l="1"] i { height: 18px; opacity: .45; }
+.m-beat[data-l="0"] i { height: 10px; background: transparent; border: 1.5px dashed var(--muted); }
+.m-beat.g { margin-left: 7px; }
+.m-beat.on i { background: var(--text); opacity: 1; transform: scaleX(1.12); }
+.m-beat.on[data-l="0"] i { background: transparent; border-color: var(--text); }
+.m-beats.quiet .m-beat i { opacity: .2; }
+.m-hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.seg.grid2 { display: grid; grid-template-columns: 1fr 1fr; }
+.m-tempo { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 10px 0 2px; }
+.m-tempo .round { width: 52px; height: 52px; font-size: 26px; }
+.m-bpm { min-width: 120px; display: flex; flex-direction: column; align-items: center; }
+.m-bpm output { font-size: 56px; font-weight: 750; line-height: 1; letter-spacing: -.02em; }
+.m-bpm span { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.m-quick { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 8px; margin: 8px 0 12px; }
+.m-quick .m-tap { font-size: 16px; font-weight: 700; }
+.m-quick .m-tap.hit { background: var(--accent-soft); }
+.m-status { margin: 8px 0 0; min-height: 20px; font-size: 13.5px; color: var(--muted); }
+.m-status:empty { display: none; }
+.m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.m-grid label:last-child { grid-column: 1 / -1; }
+.m-grid .sound-row { display: flex; gap: 8px; align-items: center; }
+.m-grid .sound-row .select { flex: 1; }
+.mbanner { padding: 0; overflow: hidden; }
+.mbanner .mb-go { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; border: 0; background: none; color: inherit; font: inherit; padding: 8px 4px 8px 12px; text-align: left; }
+.mbanner .mb-go span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mbanner .btn { margin-right: 8px; flex: 0 0 auto; }
+.m-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; animation: blink 1.4s ease-in-out infinite; }
+#tb-set.on { background: var(--accent-soft); color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .m-beat i { transition: none; } .m-dot { animation: none; } }
 </style>
 </head>
 <body>
@@ -338,11 +377,15 @@ button.hist-item { position: relative; padding-right: 28px; }
       <svg class="ic" id="themeIconMoon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg>
       <svg class="ic" id="themeIconSun" viewBox="0 0 24 24" aria-hidden="true" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
     </button>
+    <button type="button" class="icon-btn" id="tb-set" data-tab="set" aria-label="Einstellungen" aria-pressed="false">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
     <button type="button" class="icon-btn" id="helpBtn" aria-label="Anleitung öffnen">
       <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2.2-2.5 3.9"/><path d="M12 17.2v.1"/></svg>
     </button>
   </div>
   <button type="button" class="recbanner" id="recBanner" hidden><span class="rec-dot" aria-hidden="true"></span><span id="recBannerText">Aufnahme läuft</span><span class="go">zur Aufnahme ›</span></button>
+  <div class="recbanner mbanner" id="metroBanner" hidden><button type="button" class="mb-go" id="metroBannerGo"><span class="m-dot" aria-hidden="true"></span><span id="metroBannerText">Metronom läuft</span></button><button type="button" class="btn tiny" id="metroBannerStop">Stopp</button></div>
 </header>
 
 <main class="wrap">
@@ -438,6 +481,68 @@ button.hist-item { position: relative; padding-right: 28px; }
     <p class="warn-line" id="leakWarn" hidden></p>
     <p class="note" id="stageNote"></p>
     <div id="liveSlot"></div>
+  </section>
+
+  <!-- ======================= METRONOM ======================= -->
+  <section class="tab" id="tab-met" role="tabpanel" aria-labelledby="tb-met" hidden>
+    <section class="card metro" aria-label="Metronom">
+      <div class="song-chip" id="mChip" hidden>
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+        <span class="sc-txt"><b id="mcTitle"></b></span>
+        <button type="button" class="btn tiny sc-nav" id="mPrev" aria-label="Vorheriger Song">‹</button>
+        <button type="button" class="btn tiny sc-nav" id="mNext" aria-label="Nächster Song">›</button>
+        <button type="button" class="icon-btn" id="mClear" aria-label="Song abwählen">×</button>
+      </div>
+      <div class="m-beats" id="mBeats" role="group" aria-label="Betonung der Schläge"></div>
+      <p class="m-hint">Antippen: betont → normal → leise → stumm</p>
+      <div class="m-tempo">
+        <button type="button" class="round" id="mMinus" aria-label="Tempo verringern">−</button>
+        <div class="m-bpm"><output class="num" id="mBpm">100</output><span id="mUnit">BPM</span></div>
+        <button type="button" class="round" id="mPlus" aria-label="Tempo erhöhen">+</button>
+      </div>
+      <input type="range" id="mRange" min="30" max="300" step="1" value="100" aria-label="Tempo">
+      <div class="m-quick">
+        <button type="button" class="btn small" id="mHalf" aria-label="Tempo halbieren">½ ×</button>
+        <button type="button" class="btn small m-tap" id="mTap">Tap</button>
+        <button type="button" class="btn small" id="mDouble" aria-label="Tempo verdoppeln">2 ×</button>
+      </div>
+      <button type="button" class="btn fill big block" id="mStart">Start</button>
+      <p class="m-status" id="mStatus" aria-live="polite"></p>
+    </section>
+    <section class="card">
+      <h2>Takt und Klang</h2>
+      <div class="m-grid">
+        <label><span class="field-label">Takt</span><span class="select"><select id="mMeter"></select></span></label>
+        <label><span class="field-label">Notenwert</span><span class="select"><select id="mSub"></select></span></label>
+        <label><span class="field-label">Klang</span><span class="sound-row"><span class="select"><select id="mSound"></select></span><button type="button" class="btn small" id="mHear">Anhören</button></span></label>
+      </div>
+      <label class="field-label" for="mVol">Lautstärke</label>
+      <input type="range" id="mVol" min="5" max="100" step="1">
+      <div id="mSubVolBox"><label class="field-label" for="mSubVol" style="margin-top:8px">Lautstärke der Unterteilung</label><input type="range" id="mSubVol" min="0" max="100" step="1"></div>
+      <p class="help">Takt, Klang, Betonung und Tempo gelten auch für Aufnahmen mit Klick. Unterteilung und Aussetzer gibt es nur hier.</p>
+    </section>
+    <section class="card">
+      <h2>Trainer</h2>
+      <div class="seg grid2" role="group" aria-label="Trainer">
+        <button type="button" data-mtrain="off">Aus</button>
+        <button type="button" data-mtrain="silent">Stille Takte</button>
+        <button type="button" data-mtrain="gaps">Aussetzer</button>
+        <button type="button" data-mtrain="ramp">Tempo-Treppe</button>
+      </div>
+      <div class="popts" id="mSilentOpts" hidden>
+        <span>Mit Klick</span><span class="select sm"><select id="mSilOn" aria-label="Takte mit Klick"></select></span>
+        <span>Takte, ohne</span><span class="select sm"><select id="mSilOff" aria-label="Takte ohne Klick"></select></span><span>Takte</span>
+      </div>
+      <div class="popts" id="mGapOpts" hidden>
+        <span>Zufällig fallen</span><span class="select sm"><select id="mGap" aria-label="Anteil der Aussetzer"></select></span><span>der Schläge aus</span>
+      </div>
+      <div class="popts" id="mRampOpts" hidden>
+        <span class="select sm"><select id="mStep" aria-label="Schritt"></select></span><span id="mStepUnit">BPM alle</span>
+        <span class="select sm"><select id="mBars" aria-label="Takte pro Stufe"></select></span><span>Takte, bis</span>
+        <span class="select sm"><select id="mMax" aria-label="Höchsttempo"></select></span>
+      </div>
+      <p class="help" id="mTrainHelp"></p>
+    </section>
   </section>
 
   <!-- ======================= AUSWERTUNG ======================= -->
@@ -591,7 +696,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     <section class="card">
       <h2>Hilfe</h2>
       <button type="button" class="btn block" id="openHelp2">Anleitung öffnen</button>
-      <p class="about">Drum Timing Trainer · Version 5.8<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
+      <p class="about">Drum Timing Trainer · Version 6.0<br>Alles läuft auf deinem Handy; Aufnahmen und Einstellungen bleiben in diesem Browser.</p>
     </section>
   </section>
 </main>
@@ -601,6 +706,9 @@ button.hist-item { position: relative; padding-right: 28px; }
     <button type="button" role="tab" id="tb-rec" data-tab="rec" aria-controls="tab-rec">
       <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3.5"/></svg></span>Aufnahme<span class="tdot" aria-hidden="true"></span>
     </button>
+    <button type="button" role="tab" id="tb-met" data-tab="met" aria-controls="tab-met">
+      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.6 3.5h4.8L18 20.5H6z"/><path d="M8 15h8"/><path d="M12 15l5.5-9"/></svg></span>Metronom<span class="tdot" aria-hidden="true"></span>
+    </button>
     <button type="button" role="tab" id="tb-eval" data-tab="eval" aria-controls="tab-eval">
       <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16.5v-5M12 16.5V5.5M17 16.5v-8"/></svg></span>Auswertung
     </button>
@@ -609,9 +717,6 @@ button.hist-item { position: relative; padding-right: 28px; }
     </button>
     <button type="button" role="tab" id="tb-list" data-tab="list" aria-controls="tab-list">
       <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h9M4 11.5h9M4 16.5h5"/><path d="M17 17V5.5l3.5-1"/><circle cx="15" cy="17" r="2"/></svg></span>Setlist
-    </button>
-    <button type="button" role="tab" id="tb-set" data-tab="set" aria-controls="tab-set">
-      <span class="ti"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span>Einstellungen
     </button>
   </div>
 </nav>
@@ -635,7 +740,7 @@ button.hist-item { position: relative; padding-right: 28px; }
         <li>Empfindlichkeit einstellen: Unter <b>Aufnahme</b> neben „Mikrofonpegel“ auf <b>Testen</b> tippen, kurz still sein, dann ein paar Schläge spielen. Jeder erkannte Schlag lässt den Punkt daneben aufleuchten und wird gezählt.</li>
       </ol>
       <p>Der Balken zeigt deinen Pegel: links beginnt er knapp über dem Grundrauschen, ganz rechts ist die Vollaussteuerung. Der Strich ist die Schwelle: Nur was darüber kommt, zählt als Schlag. Er steht dort, wo der Regler steht, nur spiegelverkehrt: Regler ganz rechts (auch Ghost Notes) heißt Strich ganz links; je weiter du den Regler nach links schiebst, desto lauter muss ein Schlag sein. Fehlen leise Schläge, schieb den Regler nach rechts. Zählen Geräusche mit, schieb ihn nach links. Das geht auch während einer Aufnahme.</p>
-      <p>Läuft ein Metronom aus einem anderen Gerät mit, stell den Strich rechts von seinen kleinen Ausschlägen und links von deinen Schlägen ein. Sind deine leisesten Noten so laut wie das Metronom, geht beides nicht zugleich – dann das Metronom leiser stellen oder weiter weg. Kommt der Klick aus dem Lautsprecher der App, beginnt der Bereich knapp über dem Klick, damit er nicht als Schlag zählt.</p>
+      <p>Läuft ein Metronom aus einem anderen Gerät mit, stell den Strich rechts von seinen kleinen Ausschlägen und links von deinen Schlägen ein. Sind deine leisesten Noten so laut wie das Metronom, geht beides nicht zugleich – dann das Metronom leiser stellen oder weiter weg. Bei einer Aufnahme mit Klick über den Lautsprecher beginnt der Bereich knapp über dem Klick, damit er nicht als Schlag zählt. Das Metronom aus dem eigenen Reiter behandelt die App dagegen wie ein fremdes Metronom.</p>
       <p>Mit <b>Auto</b> neben „Empfindlichkeit“ stellt die App die Schwelle selbst ein und regelt während der ganzen Aufnahme nach. Beim Start misst sie kurz das Grundrauschen – dafür am besten kurz still sein. Danach misst sie in jeder ruhigen Pause neu. War der Start gestört, etwa weil du oder die Band schon gespielt habt, senkt sie die Schwelle nach ein paar Sekunden von selbst. Wird es lauter, muss sie nichts tun: Ein Schlag zählt ohnehin nur, wenn er sich deutlich vom Geräusch direkt davor abhebt. Auto ist meist empfindlicher als die Standardeinstellung: Es fängt leise Schläge besser, zählt aber plötzliche Geräusche (Stuhl, Tasse, Stimmen) eher mit. Der Regler zeigt dabei, wo die App die Schwelle gerade hat – in einem ruhigen Raum meist ganz rechts. Schaltest du Auto aus, steht er wieder auf deiner eigenen Einstellung.</p>
     </section>
 
@@ -643,17 +748,31 @@ button.hist-item { position: relative; padding-right: 28px; }
       <h2>2. Mit Klick üben</h2>
       <ul>
         <li>Tempo einstellen. Bei <b>Du spielst</b> am besten <b>Auto</b> lassen: Die App erkennt Viertel, Achtel, 16tel und Triolen selbst, auch gemischt und in Fills. Einen festen Notenwert brauchst du nur, wenn du genau diesen üben willst.</li>
-        <li><b>Takt:</b> von 2/4 bis 12/8. Bei den /8-Takten zählt das Tempo in Achteln pro Minute. Der Klick betont den Taktanfang stark und die Gruppenanfänge etwas schwächer, bei 5/8 und 7/8 kannst du die Aufteilung wählen (z. B. 2+2+3).</li>
-        <li><b>Klick über Kopfhörer</b> (Einstellungen → Klick) ist am genauesten. Über den Lautsprecher hört das Mikrofon den Klick mit; die App filtert ihn heraus, dabei können sehr leise Schläge verloren gehen.</li>
+        <li><b>Takt:</b> von 2/4 bis 12/8. Bei den /8-Takten zählt das Tempo in Achteln pro Minute. Der Klick betont den Taktanfang und die Gruppenanfänge, bei 5/8 und 7/8 kannst du die Aufteilung wählen (z. B. 2+2+3). Klang und Betonung stellst du im Reiter <b>Metronom</b> ein, sie gelten auch hier.</li>
+        <li><b>Klick über Kopfhörer</b> (Zahnrad oben → Klick) ist am genauesten. Über den Lautsprecher hört das Mikrofon den Klick mit; die App filtert ihn heraus, dabei können sehr leise Schläge verloren gehen. Wechselst du dann den Klang, miss die Latenz am besten neu.</li>
         <li>Nach dem Start zählt die App einen Takt ein (bei kurzen Takten zwei), dann spielst du los.</li>
         <li>Die große Anzeige zeigt jeden Schlag: <b>−</b> heißt zu früh, <b>+</b> heißt zu spät.</li>
       </ul>
       <div class="chips"><span class="chip good">bis ±20 ms</span><span class="chip warn">bis ±40 ms</span><span class="chip bad">darüber</span></div>
-      <p>Einmal die <b>Latenz messen</b> (Einstellungen → Latenz), damit „früh“ und „spät“ stimmen. Ohne Messung stimmen Streuung und Verlauf trotzdem.</p>
+      <p>Einmal die <b>Latenz messen</b> (Zahnrad oben → Latenz), damit „früh“ und „spät“ stimmen. Ohne Messung stimmen Streuung und Verlauf trotzdem.</p>
+    </section>
+
+    <section class="card" id="help-metro">
+      <h2>3. Metronom</h2>
+      <ul>
+        <li><b>Tempo:</b> mit <b>−</b> und <b>+</b> (gedrückt halten geht schneller), mit dem Schieber oder mit <b>Tap</b>: mindestens zweimal im Tempo antippen. <b>½ ×</b> und <b>2 ×</b> halbieren oder verdoppeln es.</li>
+        <li><b>Betonung:</b> Jeder Balken oben ist ein Schlag des Takts. Antippen schaltet ihn um: betont → normal → leise → stumm. So schaltest du die betonte Eins aus oder legst Betonungen auf 2 und 4. Jede Taktart merkt sich ihre eigene Betonung.</li>
+        <li><b>Notenwert:</b> Viertel, Achtel, Triolen, Sechzehntel, Sextolen oder Swing. Die Noten dazwischen klingen leiser – wie leise, stellst du mit „Lautstärke der Unterteilung“ ein. Bei den /8-Takten verschieben sich die Namen entsprechend (Sechzehntel statt Achtel usw.).</li>
+        <li><b>Klang:</b> Klick, Holzblock, Cowbell, Rimshot, Hi-Hat oder Piepton. <b>Anhören</b> spielt den Klang mit deiner Betonung kurz vor.</li>
+        <li><b>Trainer:</b> „Stille Takte“ lässt den Klick regelmäßig aussetzen, zum Beispiel 2 Takte mit und 2 ohne; die Balken bleiben dann ebenfalls dunkel. „Aussetzer“ lässt einzelne Schläge zufällig wegfallen (10 bis 50 %), im ersten Takt nie. Die „Tempo-Treppe“ macht den Klick alle paar Takte schneller, bis zum Höchsttempo.</li>
+        <li>Takt, Tempo, Klang und Betonung gelten auch für Aufnahmen <b>mit Klick</b>. Die Aufnahme spielt den Klick dann selbst, das Metronom hält an. Unterteilung und Aussetzer gibt es nur im Metronom; Stille Takte und Tempo-Treppe gibt es auch als Übung bei Aufnahmen mit Klick, mit denselben Werten.</li>
+        <li>Beim <b>freien Spielen</b> darf das Metronom weiterlaufen, am besten über Kopfhörer. Über den Lautsprecher hört das Mikrofon den Klick mit – dann die Empfindlichkeit so einstellen, dass er nicht zählt (siehe 1. Vorbereitung).</li>
+        <li>Ein Song aus der Setlist gibt dem Metronom sein Tempo, mit <b>‹</b> und <b>›</b> springst du zum vorherigen oder nächsten Song. Läuft das Metronom, siehst du das auch in den anderen Reitern oben, mit einem Knopf zum Anhalten.</li>
+      </ul>
     </section>
 
     <section class="card">
-      <h2>3. Übungen</h2>
+      <h2>4. Übungen</h2>
       <ul>
         <li><b>Stille Takte:</b> Der Klick setzt immer wieder aus, zum Beispiel 2 Takte mit und 2 ohne Klick. Die Punkte und die große Anzeige bleiben dann ebenfalls dunkel. Die Auswertung zeigt, wie weit du ohne Klick wegdriftest und wo du am Ende der stillen Takte liegst, wenn der Klick zurückkommt. Das funktioniert auch ohne Latenz-Messung. Bei sehr großem Abdriften (mehr als ein halber Notenwert) wird ein Schlag der falschen Zählzeit zugeordnet.</li>
         <li><b>Tempo-Treppe:</b> Der Klick wird nach jedem Durchgang schneller, zum Beispiel alle 4 Takte um 5 BPM bis zu einem Höchsttempo. Mit „nur wenn sauber“ geht es erst weiter, wenn deine Streuung im Durchgang höchstens ±15 ms war und du durchgespielt hast; sonst bleibt das Tempo. Die Auswertung zeigt jede Stufe und dein höchstes sauberes Tempo.</li>
@@ -661,7 +780,7 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>4. Frei spielen – Songs und Band</h2>
+      <h2>5. Frei spielen – Songs und Band</h2>
       <ul>
         <li>Ohne Klick: Die App erkennt das Tempo aus deinem Groove und zeichnet eine Tempokurve.</li>
         <li>Pausen über 4 Sekunden trennen Songs. Jeder Abschnitt wird einzeln ausgewertet. Wechselt das Tempo ohne lange Pause, folgt die Kurve nach ein paar Sekunden.</li>
@@ -671,18 +790,18 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>5. Setlist</h2>
+      <h2>6. Setlist</h2>
       <ul>
         <li>Im Reiter <b>Setlist</b> stehen eure Songs mit Tempo und Dauer, aufgeteilt in Sets. Für jedes Set siehst du, wie viele Songs es hat und wie lange es dauert.</li>
-        <li>Tippst du auf einen Song, übernimmt die App sein Tempo – beim freien Spielen als Zieltempo, mit Klick als Klicktempo – und die Aufnahme bekommt den Songnamen. Oben in der Aufnahme steht der gewählte Song, mit <b>‹</b> und <b>›</b> springst du zum vorherigen oder nächsten Song der Liste.</li>
+        <li>Tippst du auf einen Song, übernimmt die App sein Tempo – beim freien Spielen als Zieltempo, mit Klick als Klicktempo – und die Aufnahme bekommt den Songnamen. Oben in der Aufnahme und im Metronom steht der gewählte Song, mit <b>‹</b> und <b>›</b> springst du zum vorherigen oder nächsten Song der Liste. Danach geht es dorthin zurück, wo du zuletzt warst – zur Aufnahme oder zum Metronom.</li>
         <li>Unter jedem Song steht, wie oft er aufgenommen wurde und das letzte Ergebnis.</li>
         <li>Mit <b>Bearbeiten</b> erscheint rechts an jeder Zeile ein Griff (⠿). Daran ziehst du Songs und Pausen an ihre neue Stelle. Antippen einer Zeile öffnet sie zum Ändern oder Löschen, dort fügst du auch Songs oder Pausen ein. Eine Pause trennt zwei Sets. Gibst du ihr einen Namen (etwa „Zugabe“), wird daraus eine eigene Überschrift, deren Songs nicht zu den Sets zählen.</li>
-        <li>Wie du die Setlist als Datei sicherst oder aus deiner Tabelle übernimmst, steht genau unter <b>8. Export und Import</b>.</li>
+        <li>Wie du die Setlist als Datei sicherst oder aus deiner Tabelle übernimmst, steht genau unter <b>9. Export und Import</b>.</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>6. Die Auswertung lesen</h2>
+      <h2>7. Die Auswertung lesen</h2>
       <ul>
         <li><b>Tendenz:</b> ob du im Schnitt vor (−) oder hinter (+) dem Klick liegst.</li>
         <li><b>Streuung:</b> wie stark deine Schläge schwanken. Bis etwa ±10 ms ist sehr gleichmäßig, über ±20 ms noch unruhig.</li>
@@ -695,16 +814,16 @@ button.hist-item { position: relative; padding-right: 28px; }
     </section>
 
     <section class="card">
-      <h2>7. Verlauf</h2>
+      <h2>8. Verlauf</h2>
       <ul>
         <li>Jede Aufnahme wird im Browser gespeichert, die letzten 200. Antippen im <b>Verlauf</b> öffnet die ganze Auswertung.</li>
         <li>Mit <b>Benennen</b> oben in der Auswertung gibst du einer Aufnahme einen Namen, etwa den Songtitel. Er steht dann im Verlauf und in exportierten Dateien.</li>
-        <li>Aufnahmen, Setlist und Einstellungen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg. Zur Sicherung kannst du sie als Datei exportieren – siehe <b>8. Export und Import</b>.</li>
+        <li>Aufnahmen, Setlist und Einstellungen liegen nur in diesem Browser: Chrome und Firefox speichern getrennt, und wenn du die Websitedaten löschst, sind sie weg. Zur Sicherung kannst du sie als Datei exportieren – siehe <b>9. Export und Import</b>.</li>
       </ul>
     </section>
 
     <section class="card" id="help-files">
-      <h2>8. Export und Import</h2>
+      <h2>9. Export und Import</h2>
       <p>Es gibt zwei Arten von Dateien: die <b>Setlist</b> als Tabelle (CSV) und einzelne <b>Aufnahmen</b> (JSON). Beide bleiben auf deinem Handy, bis du sie selbst weitergibst – die App lädt nichts hoch. Exportierte Dateien landen im Download-Ordner des Handys (z. B. in „Eigene Dateien“ → „Downloads“).</p>
 
       <h3>Setlist exportieren</h3>
@@ -750,14 +869,15 @@ Gary Clark Jr.;Come Together;80;</pre>
     </section>
 
     <section class="card">
-      <h2>9. Als App auf dem Startbildschirm</h2>
-      <p>Unter <b>Einstellungen → Als App nutzen</b> auf <b>App installieren</b> tippen. Erscheint der Knopf nicht, geht es auch über das Chrome-Menü (⋮): „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Nach dem ersten Öffnen läuft die App auch ohne Internet, etwa im Proberaum. Ist Internet da, lädt sie beim Start automatisch die neueste Version.</p>
+      <h2>10. Als App auf dem Startbildschirm</h2>
+      <p>Unter dem <b>Zahnrad</b> oben bei <b>Als App nutzen</b> auf <b>App installieren</b> tippen. Erscheint der Knopf nicht, geht es auch über das Chrome-Menü (⋮): „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Nach dem ersten Öffnen läuft die App auch ohne Internet, etwa im Proberaum. Ist Internet da, lädt sie beim Start automatisch die neueste Version.</p>
     </section>
 
     <section class="card">
-      <h2>10. Gut zu wissen</h2>
+      <h2>11. Gut zu wissen</h2>
       <ul>
         <li>Die App versucht, den Bildschirm während der Aufnahme anzulassen. Wechselst du die App oder geht der Bildschirm doch aus, stoppt die Aufnahme und wird bis dahin ausgewertet und gespeichert.</li>
+        <li>Das Metronom läuft weiter, wenn du den Reiter wechselst. Wechselst du die App oder sperrst den Bildschirm, versucht es weiterzulaufen – ob das Handy das zulässt, hängt vom Gerät ab.</li>
         <li>In der Bandprobe hört das Mikrofon alle Instrumente. Die Tempokurve funktioniert trotzdem; die Werte einzelner Schläge sind beim Üben allein aussagekräftiger.</li>
         <li>Mit Bluetooth-Kopfhörern ist die Verzögerung größer und kann schwanken; kabelgebundene sind zuverlässiger.</li>
       </ul>
@@ -1246,6 +1366,122 @@ function analyzeClick3(xs, beatSec, subMode, calibrated, countInBeats) {
   return analyzeClick4(xs, constBeats(beatSec, Math.max(last, (countInBeats || 0) * beatSec)), { subMode, calibrated, countIn: countInBeats || 0, perBar: 4 });
 }
 
+// ---------- click sounds: made in the app, no sound files. Levels: one (accented 1), acc, norm, soft, sub ----------
+const SOUNDS = [['click', 'Klick'], ['wood', 'Holzblock'], ['cow', 'Cowbell'], ['rim', 'Rimshot'], ['hat', 'Hi-Hat'], ['beep', 'Piepton']];
+const LEVEL_GAIN = { one: 1, acc: 0.88, norm: 0.75, soft: 0.36, sub: 0.62 };
+const SOUND_GAIN = { click: 1, wood: 1, cow: 2, rim: 1, hat: 1, beep: 0.45 };   // about equally loud (A-weighted energy of the first 150 ms), peaks below 1
+const noiseBufs = new WeakMap();
+function noiseBuf(ac) {
+  let b = noiseBufs.get(ac);
+  if (!b) { b = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; noiseBufs.set(ac, b); }
+  return b;
+}
+function envGain(ac, dest, time, peak, attack, decay) {
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(peak, time + attack); g.gain.exponentialRampToValueAtTime(0.0001, time + attack + decay);
+  g.connect(dest); return g;
+}
+function oscAt(ac, into, time, type, f, len) { const o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, time); o.connect(into); o.start(time); o.stop(time + len); }
+function noiseAt(ac, into, time, len, filters) {
+  const src = ac.createBufferSource(); src.buffer = noiseBuf(ac);
+  let node = src;
+  for (const [type, f, q] of filters) { const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q) b.Q.value = q; node.connect(b); node = b; }
+  node.connect(into);
+  src.start(time, Math.random() * 0.5, len);
+}
+function playSound(ac, dest, time, kind, lv, mul) {
+  const p = (LEVEL_GAIN[lv] || 0.75) * (mul == null ? 1 : mul) * (SOUND_GAIN[kind] || 1);
+  if (!(p > 0)) return;
+  const one = lv === 'one', acc = lv === 'acc', sub = lv === 'sub';
+  if (kind === 'wood') {                                   // two inharmonic partials and a short knock
+    const f = one ? 1320 : acc ? 1180 : sub ? 1500 : 1020, d = sub ? 0.035 : 0.06;
+    oscAt(ac, envGain(ac, dest, time, p * 0.8, 0.0008, d), time, 'sine', f, d + 0.02);
+    oscAt(ac, envGain(ac, dest, time, p * 0.28, 0.0005, d * 0.45), time, 'sine', f * 2.72, d + 0.02);
+    noiseAt(ac, envGain(ac, dest, time, p * 0.3, 0.0004, 0.006), time, 0.03, [['bandpass', f * 2, 1.2]]);
+  } else if (kind === 'cow') {                              // two square waves through a band-pass, like the classic drum machines
+    const k = one ? 1.122 : 1, d = sub ? 0.08 : one ? 0.3 : 0.22;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1300 * k; bp.Q.value = 1.1;
+    bp.connect(envGain(ac, dest, time, p * 0.55, 0.001, d));
+    const mix = ac.createGain(); mix.gain.value = 0.5; mix.connect(bp);
+    oscAt(ac, mix, time, 'square', 545 * k, d + 0.02); oscAt(ac, mix, time, 'square', 815 * k, d + 0.02);
+  } else if (kind === 'rim') {                              // stick on the rim: a hard tone and a short crack
+    const f = one ? 2050 : acc ? 1850 : sub ? 2300 : 1650, d = sub ? 0.025 : 0.045;
+    oscAt(ac, envGain(ac, dest, time, p * 0.75, 0.0004, d), time, 'triangle', f, d + 0.02);
+    oscAt(ac, envGain(ac, dest, time, p * 0.25, 0.0004, d * 0.6), time, 'triangle', f * 1.58, d + 0.02);
+    noiseAt(ac, envGain(ac, dest, time, p * 0.5, 0.0004, sub ? 0.012 : 0.02), time, 0.05, [['highpass', 1500], ['bandpass', 3200, 1.4]]);
+  } else if (kind === 'hat') {                              // closed hi-hat: noise and six square waves, only the metallic top end
+    const d = one ? 0.12 : acc ? 0.09 : sub ? 0.035 : 0.06;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 10000; bp.Q.value = 0.7;
+    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+    bp.connect(hp); hp.connect(envGain(ac, dest, time, p, 0.0005, d));
+    const mix = ac.createGain(); mix.gain.value = 0.12; mix.connect(bp);
+    [2, 3, 4.16, 5.43, 6.79, 8.21].forEach(r => oscAt(ac, mix, time, 'square', 40 * r, d + 0.02));
+    const nz = ac.createGain(); nz.gain.value = 0.9; nz.connect(bp);
+    noiseAt(ac, nz, time, d + 0.03, []);
+  } else if (kind === 'beep') {                             // like a digital metronome: a short, even tone
+    const f = one ? 1320 : acc ? 1175 : sub ? 1760 : 880, len = sub ? 0.03 : 0.055;
+    const g = ac.createGain(); g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(p * 0.6, time + 0.002);
+    g.gain.setValueAtTime(p * 0.6, time + len); g.gain.linearRampToValueAtTime(0, time + len + 0.012); g.connect(dest);
+    oscAt(ac, g, time, 'sine', f, len + 0.02);
+  } else {                                                  // click: the sound of the app from the start
+    const f = one ? 2000 : acc ? 1750 : sub ? 2400 : 1500;
+    oscAt(ac, envGain(ac, dest, time, p, 0.0005, sub ? 0.03 : 0.0495), time, 'sine', f, 0.06);
+  }
+}
+const lvName = (level, isOne) => level === 3 ? (isOne ? 'one' : 'acc') : level === 2 ? 'norm' : level === 1 ? 'soft' : null;
+
+// ---------- metronome: which click to play when ----------
+// Level of each beat: 3 accent, 2 normal, 1 soft, 0 silent. By default the bar start and the group starts
+// (e.g. 7/8 as 2+2+3) are accented, exactly like the click of the recordings always was.
+function defaultAccents(n, groups) {
+  const a = new Array(n).fill(2); a[0] = 3;
+  if (groups) { let s = 0; for (const g of groups) { if (s < n) a[s] = 3; s += g; } }
+  return a;
+}
+// notes inside one beat, as fractions of the beat (sw = swing: the second note on the last triplet)
+const SUBDIVS = { 1: [0], 2: [0, 1 / 2], 3: [0, 1 / 3, 2 / 3], 4: [0, 1 / 4, 1 / 2, 3 / 4], 6: [0, 1 / 6, 1 / 3, 1 / 2, 2 / 3, 5 / 6], sw: [0, 2 / 3] };
+// The planner hands out one click after another, on the audio clock. cfg (read again for every click, so changes
+// apply at once): { bpm, n, accents, sub, trainer: { mode: 'off' | 'silent' | 'gaps' | 'ramp', on, off, gap, step, bars, max } }
+// Trainer: 'silent' = `on` bars with click, `off` bars without; 'gaps' = every beat is left out with probability
+// `gap` (never in the first bar); 'ramp' = `step` faster every `bars` bars, up to `max`.
+// An event: { t, bar, beat, k (note inside the beat, 0 = the beat itself), level, one, silent, bpm }
+function metroInit(cfg, t0, rng) {
+  return { cfg, rng: rng || Math.random, t: t0, bar: 0, beat: 0, k: 0, bpm: cfg.bpm, beatT: t0, beatLen: 60 / cfg.bpm, silentBar: false, muted: false, bar0: 0,
+    mode: cfg.trainer ? cfg.trainer.mode : 'off', sub: String(cfg.sub), lastOff: -1 };
+}
+// after a change of the settings: a new note value inside a beat goes on with the next note after the last one played;
+// st.t becomes the time of the next click again
+function metroSync(st) {
+  const key = String(st.cfg.sub), offs = SUBDIVS[key] || SUBDIVS[1];
+  if (st.sub !== key) {
+    if (st.k > 0) { const k = offs.findIndex(o => o > st.lastOff + 1e-9); if (k < 0) { st.k = 0; st.beat++; st.beatT += st.beatLen; } else st.k = k; }
+    st.sub = key;
+  }
+  st.t = st.beatT + (st.k === 0 ? 0 : offs[st.k] * st.beatLen);
+  return offs;
+}
+function metroNext(st) {
+  const c = st.cfg, tr = c.trainer || { mode: 'off' };
+  if (tr.mode !== st.mode) { st.mode = tr.mode; st.bar0 = st.k === 0 && st.beat === 0 ? st.bar : st.bar + 1; }   // a new trainer counts from the next bar
+  const offs = metroSync(st);
+  if (st.k === 0) {
+    if (st.beat >= c.n) { st.beat = 0; st.bar++; }
+    const idx = st.bar - st.bar0;
+    if (st.beat === 0 && tr.mode === 'ramp' && idx > 0 && idx % tr.bars === 0) st.bpm = Math.min(tr.max, st.bpm + tr.step);
+    st.silentBar = tr.mode === 'silent' && idx >= 0 && idx % (tr.on + tr.off) >= tr.on;   // every beat, so switching it off works at once
+    if (tr.mode !== 'ramp') st.bpm = c.bpm;
+    st.beatLen = 60 / st.bpm;
+    st.muted = tr.mode === 'gaps' && idx > 0 && st.rng() < tr.gap;
+  }
+  const lvl = c.accents[st.beat];
+  const ev = { t: st.beatT + offs[st.k] * st.beatLen, bar: st.bar, beat: st.beat, k: st.k, level: st.k === 0 ? (lvl == null ? 2 : lvl) : 2, one: st.beat === 0, silent: st.silentBar || st.muted, bpm: st.bpm };
+  st.lastOff = offs[st.k];
+  st.k++;
+  if (st.k >= offs.length) { st.k = 0; st.beat++; st.beatT += st.beatLen; st.t = st.beatT; }
+  else st.t = st.beatT + offs[st.k] * st.beatLen;
+  return ev;
+}
+
 // ---------- tempo estimation from onsets (no click) ----------
 const T_MIN = 55, T_MAX = 200, T_STEP = 1.01;
 const FREE_JUMP = 12;   // cost of an abrupt tempo change in the free analysis (tested: 8 too eager on messy material, 16+ misses changes)
@@ -1490,6 +1726,11 @@ function analyzeFree3(onsets, opts) {
     if (m.groups) { let a = 0; m.groups.forEach(g => { starts.add(a); a += g; }); }
     return Object.assign({ label: m.label || m.id, starts }, m);
   }
+  // accent of every beat (3 betont, 2 normal, 1 leise, 0 stumm); stored per meter only when changed
+  function accentsFor(id) {
+    const mi = meterOf(id), a = settings.accents[mi.id];
+    return Array.isArray(a) && a.length === mi.n && a.every(v => v === 0 || v === 1 || v === 2 || v === 3) ? a.slice() : defaultAccents(mi.n, mi.groups);
+  }
   const SUBS = { 4: { 0: 'Auto', 1: 'Viertel', 2: 'Achtel', 3: 'Triolen', 4: '16tel' }, 8: { 0: 'Auto', 1: 'Achtel', 2: '16tel', 3: 'Triolen', 4: '32tel' } };
   const LEVELS = { 4: { 1: 'Viertel', 2: 'Achtel', 4: '16tel', 8: '32tel', 3: 'Triolen', 6: 'Sextolen' }, 8: { 1: 'Achtel', 2: '16tel', 4: '32tel', 8: '64tel', 3: 'Triolen', 6: 'Sextolen' } };
   const unitOf = (den) => den === 8 ? 'Achtel/min' : 'BPM';
@@ -1525,6 +1766,13 @@ function analyzeFree3(onsets, opts) {
     stClean: saved.stClean !== false,
     sensAuto: saved.sensAuto === true,
     songId: typeof saved.songId === 'string' ? saved.songId : null,
+    // metronome (version 6): sound, note value, volume of the notes in between, trainer, accent of every beat per meter
+    mSound: ['click', 'wood', 'cow', 'rim', 'hat', 'beep'].includes(saved.mSound) ? saved.mSound : 'click',
+    mSub: ['1', '2', '3', '4', '6', 'sw'].includes(String(saved.mSub)) ? String(saved.mSub) : '1',
+    mSubVol: clampInt(saved.mSubVol, 0, 100, 60),
+    mTrain: ['off', 'silent', 'gaps', 'ramp'].includes(saved.mTrain) ? saved.mTrain : 'off',
+    mGap: [10, 20, 30, 50].includes(saved.mGap) ? saved.mGap : 20,
+    accents: saved.accents && typeof saved.accents === 'object' && !Array.isArray(saved.accents) ? saved.accents : {},
     v: 3
   };
   if (saved.v !== 3) settings.sub = 0;          // new in this version: automatic note value as default
@@ -1671,6 +1919,7 @@ function analyzeFree3(onsets, opts) {
     renderStageNote();
     renderCalInfo();
     renderSongChip();
+    renderMetro();
   }
   (function fillOptions() {
     const add = (sel, list) => list.forEach(([v, t]) => { const o = document.createElement('option'); o.value = String(v); o.textContent = t; sel.append(o); });
@@ -1692,7 +1941,7 @@ function analyzeFree3(onsets, opts) {
     vals.forEach(v => { const o = document.createElement('option'); o.value = String(v); o.textContent = String(v); sel.append(o); });
     sel.value = String(want);
   }
-  function setBpm(v) { if (setupLocked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; fillStairMax(); }
+  function setBpm(v) { if (setupLocked()) return; settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings(); $('bpmOut').textContent = settings.bpm; $('bpmRange').value = settings.bpm; fillStairMax(); renderMetro(); }
   function holdRepeat(btn, fn) {
     let t1 = null, t2 = null;
     const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
@@ -1728,6 +1977,8 @@ function analyzeFree3(onsets, opts) {
   $('clickVol').addEventListener('input', (e) => {
     settings.clickVol = clampInt(e.target.value, 5, 100, 70); saveSettings();
     if (clickBus && ctx) clickBus.gain.setTargetAtTime(clickGain(), ctx.currentTime, 0.02);
+    if (M.bus && M.ac) M.bus.gain.setTargetAtTime(clickGain(), M.ac.currentTime, 0.02);
+    $('mVol').value = settings.clickVol;
     applyThreshold();
   });
 
@@ -1740,6 +1991,7 @@ function analyzeFree3(onsets, opts) {
     renderRunState();
     renderSongChip();
     renderSetlist();
+    renderMetro();
   }
 
   // While recording, the setup shrinks to one line and the live display appears; idle, only setup + microphone show.
@@ -1943,7 +2195,7 @@ function analyzeFree3(onsets, opts) {
     ctx = stream = srcNode = procNode = sinkNode = clickBus = detector = null;
     uiBeats.length = 0;
     onsetSink = null;
-    releaseWakeLock();
+    wake('rec', false);
     if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
     meterValue = 0; renderMeter(0, null);
     lightBeat(-1);
@@ -1957,7 +2209,9 @@ function analyzeFree3(onsets, opts) {
   }
   function clickFloor() {                       // the click over the speaker must not count as a hit
     const sc = cal.speaker;
-    return session && session.mode === 'click' && session.output === 'speaker' && sc && sc.clickPeakPerGain ? 1.5 * sc.clickPeakPerGain * clickGain() : 0;
+    if (!(session && session.mode === 'click' && session.output === 'speaker' && sc && sc.clickPeakPerGain)) return 0;
+    const snd = session.sound || settings.mSound, other = snd !== (sc.sound || 'click');
+    return 1.5 * sc.clickPeakPerGain * clickGain() * soundRatio(snd, sc.sound) * (other ? 1.3 : 1);   // a sound other than the measured one: a bit of margin
   }
   const sensSpan = () => sensRange(noiseFloor, clickFloor());   // what the slider covers and the level meter shows
   function baseThreshold() {
@@ -1976,20 +2230,35 @@ function analyzeFree3(onsets, opts) {
       detector.threshold = Math.max(baseThreshold(), min);
     }
   }
-  function playClick(time, accent) {        // accent: 2 = bar start, 1 = group start, 0/false = normal
-    const lvl = accent === true ? 2 : (accent || 0);
-    const osc = ctx.createOscillator(), g = ctx.createGain();
-    osc.frequency.value = lvl === 2 ? 2000 : lvl === 1 ? 1750 : 1500;
-    const peak = lvl === 2 ? 1.0 : lvl === 1 ? 0.88 : 0.75;
-    g.gain.setValueAtTime(0, time);
-    g.gain.linearRampToValueAtTime(peak, time + 0.0005);
-    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-    osc.connect(g); g.connect(clickBus);
-    osc.start(time); osc.stop(time + 0.06);
+  function playClick(time, lv, kind) { playSound(ctx, clickBus, time, kind || settings.mSound, lv); }
+  // how loud a sound is above 1 kHz (what the detector hears), relative to the click: for the speaker filter
+  const soundPeaks = {};
+  async function measureSoundPeaks() {
+    if (soundPeaks.done) return;
+    try {
+      const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, sr = 48000;
+      for (const [k] of SOUNDS) {
+        const oc = new OAC(1, Math.round(sr * 0.4), sr);
+        playSound(oc, oc.destination, 0.01, k, 'one');
+        const buf = await oc.startRendering();
+        const d = new OnsetDetector(sr, {}); d.process(buf.getChannelData(0), 0); soundPeaks[k] = d.readPeak();
+      }
+      soundPeaks.done = true;
+    } catch (e) { /* no offline rendering: no correction */ }
   }
+  function soundRatio(now, measured) { const a = soundPeaks[now], b = soundPeaks[measured || 'click']; return a > 0 && b > 0 ? a / b : 1; }
   const wait = (ms) => new Promise(res => setTimeout(res, ms));
-  async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; } }
+  // keeps the screen on while a recording or the metronome runs (the browser lets go of it when the page is hidden)
+  const wakeHolders = new Set(); let wakeAsking = false;
+  async function requestWakeLock() {
+    if (wakeAsking || (wakeLock && !wakeLock.released) || !('wakeLock' in navigator)) return;
+    wakeAsking = true;
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; }
+    wakeAsking = false;
+    if (!wakeHolders.size) releaseWakeLock();
+  }
   function releaseWakeLock() { try { if (wakeLock) wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
+  function wake(who, on) { if (on) wakeHolders.add(who); else wakeHolders.delete(who); if (wakeHolders.size) requestWakeLock(); else releaseWakeLock(); }
 
   async function startEngine(tok) {
     try { createContext(); } catch (e) { reportError('audio', e); return false; }
@@ -2017,7 +2286,7 @@ function analyzeFree3(onsets, opts) {
     const gain = clickGain();
     const start = ctx.currentTime + lead;
     const times = [];
-    for (let i = 0; i < N; i++) { const t = start + i * spacing; times.push(t); playClick(t, i % 4 === 0); uiBeats.push({ time: t, idx: i }); }
+    for (let i = 0; i < N; i++) { const t = start + i * spacing; times.push(t); playClick(t, i % 4 === 0 ? 'one' : 'norm'); uiBeats.push({ time: t, idx: i }); }
     const hint = output === 'headphones' ? 'Ohrhörer ans Handy-Mikrofon halten, nicht spielen' : 'Nicht spielen';
     const t0 = performance.now(), total = (lead + N * spacing + 0.7) * 1000;
     while (performance.now() - t0 < total) {
@@ -2031,7 +2300,7 @@ function analyzeFree3(onsets, opts) {
     const r = computeLatency(times, onsets, 0.6);
     if (r.ok) {
       const entry = { latencyMs: Math.round(r.latency * 1000), spreadMs: Math.round(r.spreadMs * 10) / 10, date: Date.now() };
-      if (output === 'speaker') entry.clickPeakPerGain = r.clickPeak / gain;
+      if (output === 'speaker') { entry.clickPeakPerGain = r.clickPeak / gain; entry.sound = settings.mSound; }
       cal[output] = entry; store.set(K_CAL, cal);
     }
     return r;
@@ -2044,6 +2313,7 @@ function analyzeFree3(onsets, opts) {
   async function measureLatencyStandalone() {
     if (monitoring) stopMonitor();
     if (locked()) return;
+    metroStop();                                       // its clicks would be measured too
     busy = true; runKind = 'latency';
     const tok = ++runToken;
     const output = settings.output;
@@ -2080,10 +2350,13 @@ function analyzeFree3(onsets, opts) {
     $('tlSub').hidden = true;
     resetLive();
     setLockedUI(true);
+    if (mode === 'click') metroStop();                 // the recording plays its own click (same sound and accents); before the noise is measured
     if (currentTab !== 'rec') showTab('rec');
     window.scrollTo(0, 0);
     const ok = await startEngine(tok);
     if (!ok) { if (tok === runToken) finishIdle(); return; }
+    if (mode === 'click' && output === 'speaker') await measureSoundPeaks();
+    if (tok !== runToken) return;
     if (mode === 'click' && output === 'speaker' && !cal.speaker) {
       const r = await runLatency('speaker', tok);
       if (tok !== runToken || !r) return;
@@ -2094,7 +2367,7 @@ function analyzeFree3(onsets, opts) {
     const target = mode === 'free' && settings.ftarget ? settings.bpm : null;
     session = {
       mode, output, bpm: settings.bpm, subMode: settings.sub, target,
-      meterId: settings.meter, practice: mode === 'click' ? settings.practice : 'normal',
+      meterId: settings.meter, practice: mode === 'click' ? settings.practice : 'normal', accents: accentsFor(settings.meter), sound: settings.mSound,
       silOn: settings.silOn, silOff: settings.silOff,
       stStep: settings.stStep, stBars: settings.stBars, stMax: Math.max(settings.bpm, settings.stMax), stClean: settings.stClean,
       calibrated: !!c, latency: c ? c.latencyMs / 1000 : 0,
@@ -2124,7 +2397,7 @@ function analyzeFree3(onsets, opts) {
     $('timeline').hidden = false;
     busy = false;
     renderRunState();
-    requestWakeLock();
+    wake('rec', true);
   }
 
   function stopAll(reason) {
@@ -2138,7 +2411,8 @@ function analyzeFree3(onsets, opts) {
     setTimeout(() => { finishSession(s); if (statusText === 'Gestoppt – wird ausgewertet …') setStatus('Gestoppt.'); }, 40);
   }
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) return;
+    if (M.on) { clearTimeout(M.timer); metroTick(); }   // hidden: at once plan further ahead; visible: back to short steps
+    if (!document.hidden) { if (wakeHolders.size) requestWakeLock(); return; }
     if (monitoring) stopMonitor();
     else if (phase === 'session' || phase === 'latcal' || phase === 'noise') stopAll('hidden');
   });
@@ -2228,7 +2502,7 @@ function analyzeFree3(onsets, opts) {
       const tRel = nextBeat - s.beat0 - s.ciRel, prevSilent = s.silentArr.length ? s.silentArr[s.silentArr.length - 1] : 0;
       if (silent && !prevSilent) s.bands.push({ a: tRel, b: Infinity });
       if (!silent && prevSilent && s.bands.length) s.bands[s.bands.length - 1].b = tRel;
-      if (!silent) playClick(nextBeat, inBar === 0 ? 2 : s.mi.starts.has(inBar) ? 1 : 0);
+      if (!silent) { const lv = lvName(s.accents[inBar], inBar === 0) || (k < s.countIn ? 'norm' : null); if (lv) playClick(nextBeat, lv, s.sound); }   // a silent beat still counts in
       uiBeats.push({ time: nextBeat, idx: inBar, silent, k });
       s.beatsRel.push(nextBeat - s.beat0); s.silentArr.push(silent); s.passArr.push(s.practice === 'stair' && after >= 0 ? s.passIdx : 0);
       if (k < s.countIn) s.countInClicks.push(nextBeat);
@@ -3670,7 +3944,8 @@ function analyzeFree3(onsets, opts) {
     if (song.bpm) { settings.bpm = clampInt(song.bpm, 30, 300, settings.bpm); settings.ftarget = true; } else settings.ftarget = false;
     saveSettings(); slMsg('');
     renderSetup(); renderSetlist();
-    if (currentTab !== 'rec') showTab('rec', { top: true });
+    renderMetro();
+    if (currentTab !== lastPlayTab) showTab(lastPlayTab, { top: true });
   }
   function nextSongOf(id, dir) {
     const i = setlist.findIndex(x => x.id === id);
@@ -3678,10 +3953,12 @@ function analyzeFree3(onsets, opts) {
     return null;
   }
   function renderSongChip() {
-    const song = currentSong(), chip = $('songChip');
+    const song = currentSong(), chip = $('songChip'), mchip = $('mChip');
     if (!chip) return;
-    chip.hidden = !song;
+    chip.hidden = !song; mchip.hidden = !song;
     if (!song) return;
+    $('mcTitle').textContent = song.n;
+    mchip.title = [song.n, song.a, song.bpm ? song.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
     $('scTitle').textContent = song.n;
     chip.title = [song.n, song.a, song.bpm ? song.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
     const nx = nextSongOf(song.id, 1), pv = nextSongOf(song.id, -1), busyNow = setupLocked();
@@ -3690,10 +3967,15 @@ function analyzeFree3(onsets, opts) {
     $('songPrev').disabled = !pv || busyNow;
     $('songPrev').setAttribute('aria-label', pv ? `Vorheriger Song: ${pv.n}` : 'Kein vorheriger Song');
     $('songClear').disabled = busyNow;
+    $('mNext').disabled = $('songNext').disabled; $('mPrev').disabled = $('songPrev').disabled; $('mClear').disabled = busyNow;
+    $('mNext').setAttribute('aria-label', $('songNext').getAttribute('aria-label')); $('mPrev').setAttribute('aria-label', $('songPrev').getAttribute('aria-label'));
   }
   $('songNext').addEventListener('click', () => { const s = currentSong(); const nx = s && nextSongOf(s.id, 1); if (nx) selectSong(nx.id); });
   $('songPrev').addEventListener('click', () => { const s = currentSong(); const pv = s && nextSongOf(s.id, -1); if (pv) selectSong(pv.id); });
   $('songClear').addEventListener('click', () => { if (setupLocked()) return; settings.songId = null; saveSettings(); renderSongChip(); renderSetlist(); });
+  $('mNext').addEventListener('click', () => $('songNext').click());
+  $('mPrev').addEventListener('click', () => $('songPrev').click());
+  $('mClear').addEventListener('click', () => $('songClear').click());
 
   // ---------- export / open file (optional backup, or to look at a recording on another device) ----------
   $('recExport').addEventListener('click', () => {
@@ -3807,11 +4089,226 @@ function analyzeFree3(onsets, opts) {
   }
   $('goHistory').addEventListener('click', () => showTab('hist'));
 
+  // ---------- metronome tab ----------
+  // Its own audio context, so it can run on while you record freely (headphones!) or test the microphone.
+  // A recording with click stops it and plays the same click itself.
+  const M = { ac: null, bus: null, st: null, timer: 0, raf: 0, q: [], on: false, shown: -1, taps: [], msg: '' };
+  const SUB_LABELS = { 4: { 1: 'Viertel', 2: 'Achtel', 3: 'Triolen', 4: 'Sechzehntel', 6: 'Sextolen', sw: 'Swing-Achtel' },
+    8: { 1: 'Achtel', 2: 'Sechzehntel', 3: '16tel-Triolen', 4: '32tel', 6: '32tel-Sextolen', sw: 'Swing-16tel' } };
+  const LEVEL_NAMES = ['stumm', 'leise', 'normal', 'betont'];
+  // locked only while a recording with click (or a latency measurement) runs: free recordings may use the metronome
+  const metroLocked = () => {
+    const running = busy || phase === 'noise' || phase === 'latcal' || phase === 'session';
+    if (!running || monitoring) return false;
+    return runKind === 'latency' || (session ? session.mode : settings.mode) === 'click';
+  };
+  function metroCfg() {
+    const mi = meterOf(settings.meter);
+    return { bpm: settings.bpm, n: mi.n, accents: accentsFor(settings.meter), sub: settings.mSub,
+      trainer: { mode: settings.mTrain, on: settings.silOn, off: settings.silOff, gap: settings.mGap / 100, step: settings.stStep, bars: settings.stBars, max: Math.max(settings.bpm, settings.stMax) } };
+  }
+  function metroStart() {
+    if (M.on || metroLocked()) return;
+    try { const AC = window.AudioContext || window.webkitAudioContext; M.ac = new AC({ latencyHint: 'interactive' }); }
+    catch (e) { M.msg = 'Der Ton lässt sich in diesem Browser nicht starten.'; renderMetro(); return; }
+    if (M.ac.state === 'suspended') M.ac.resume().catch(() => {});
+    M.bus = M.ac.createGain(); M.bus.gain.value = clickGain(); M.bus.connect(M.ac.destination);
+    M.st = metroInit(metroCfg(), M.ac.currentTime + 0.12); M.setBpm = settings.bpm;
+    M.q = []; M.on = true; M.shown = -1; M.msg = '';
+    metroTick();
+    M.raf = requestAnimationFrame(metroFrame);
+    wake('met', true);
+    renderMetro();
+  }
+  function metroStop() {
+    if (!M.on) return;
+    M.on = false; clearTimeout(M.timer); cancelAnimationFrame(M.raf);
+    const ac = M.ac; M.ac = M.bus = M.st = null; M.q = [];
+    if (ac) ac.close().catch(() => {});
+    wake('met', false);
+    renderMetro();
+  }
+  function metroTick() {
+    if (!M.on || !M.ac) return;
+    const hidden = document.hidden, now = M.ac.currentTime, until = now + (hidden ? 1.6 : 0.2);   // hidden: timers get slow, plan further ahead
+    M.st.cfg = metroCfg();
+    if (settings.bpm !== M.setBpm) { M.setBpm = settings.bpm; M.st.bpm = settings.bpm; }   // changed elsewhere (setlist, recording tab)
+    metroSync(M.st);
+    while (M.st.t < until) {
+      const e = metroNext(M.st);
+      if (e.t < now - 0.03) continue;                       // the page stalled: rather skip a click than play a burst
+      if (!e.silent) {
+        if (e.k === 0) { const lv = lvName(e.level, e.one); if (lv) playSound(M.ac, M.bus, e.t, settings.mSound, lv); }
+        else if (settings.mSubVol > 0) playSound(M.ac, M.bus, e.t, settings.mSound, 'sub', settings.mSubVol / 100);
+      }
+      if (e.k === 0) M.q.push(e);
+    }
+    M.timer = setTimeout(metroTick, hidden ? 250 : 25);
+  }
+  function metroFrame() {
+    M.raf = requestAnimationFrame(metroFrame);
+    if (!M.on || !M.ac) return;
+    const now = M.ac.currentTime - (M.ac.outputLatency || 0);
+    let cur = null;
+    while (M.q.length && M.q[0].t <= now) cur = M.q.shift();
+    if (!cur) return;
+    lightMetro(cur.silent ? -1 : cur.beat, cur.silent);
+    if (settings.mTrain === 'ramp' && $('mBpm').textContent !== String(cur.bpm)) { $('mBpm').textContent = cur.bpm; $('mRange').value = cur.bpm; }
+    $('mStatus').textContent = metroStatus(cur);
+    if (!$('metroBanner').hidden) $('metroBannerText').textContent = `Metronom · ${cur.bpm} ${unitOf(meterOf(settings.meter).den)}`;
+  }
+  function metroStatus(e) {
+    const tr = settings.mTrain, idx = M.st ? e.bar - M.st.bar0 : 0, mi = meterOf(settings.meter);
+    if (tr === 'silent') {
+      if (idx < 0) return '';
+      const per = settings.silOn + settings.silOff, q = idx % per;
+      return q < settings.silOn ? `Mit Klick – Takt ${q + 1} von ${settings.silOn}` : `Ohne Klick – Takt ${q - settings.silOn + 1} von ${settings.silOff}, spiel weiter`;
+    }
+    if (tr === 'gaps') return `Takt ${e.bar + 1} · ${settings.mGap} % der Schläge fallen zufällig aus`;
+    if (tr === 'ramp') {
+      const max = Math.max(settings.bpm, settings.stMax);
+      if (e.bpm >= max) return `Höchsttempo ${e.bpm} ${unitOf(mi.den)} erreicht`;
+      const left = idx < 0 ? settings.stBars : settings.stBars - (idx % settings.stBars);
+      return `Jetzt ${e.bpm} ${unitOf(mi.den)} · in ${left} ${left === 1 ? 'Takt' : 'Takten'} +${settings.stStep}`;
+    }
+    return `Takt ${e.bar + 1}`;
+  }
+  function lightMetro(i, quiet) {
+    const box = $('mBeats');
+    box.classList.toggle('quiet', !!quiet);
+    if (M.shown === i) return;
+    M.shown = i;
+    Array.from(box.children).forEach((b, j) => b.classList.toggle('on', j === i));
+  }
+  function renderMetroBeats() {
+    const box = $('mBeats'), mi = meterOf(settings.meter), acc = accentsFor(settings.meter), lock = metroLocked();
+    box.textContent = ''; M.shown = -1;
+    for (let j = 0; j < mi.n; j++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'm-beat' + (j > 0 && mi.starts.has(j) ? ' g' : ''); b.dataset.i = String(j); b.dataset.l = String(acc[j]);
+      b.setAttribute('aria-label', `Schlag ${j + 1}: ${LEVEL_NAMES[acc[j]]}`); b.disabled = lock;
+      b.append(document.createElement('i'));
+      box.append(b);
+    }
+  }
+  $('mBeats').addEventListener('click', (ev) => {
+    const b = ev.target.closest('.m-beat'); if (!b || metroLocked()) return;
+    const id = meterOf(settings.meter).id, acc = accentsFor(id), j = Number(b.dataset.i);
+    if (!(j >= 0 && j < acc.length)) { renderMetro(); return; }
+    acc[j] = (acc[j] + 3) % 4;                                // betont -> normal -> leise -> stumm -> betont
+    const def = defaultAccents(acc.length, meterOf(id).groups);
+    if (acc.every((v, k) => v === def[k])) delete settings.accents[id]; else settings.accents[id] = acc;
+    saveSettings();
+    b.dataset.l = String(acc[j]); b.setAttribute('aria-label', `Schlag ${j + 1}: ${LEVEL_NAMES[acc[j]]}`);
+  });
+  const metroBpm = () => (M.on && M.st && settings.mTrain === 'ramp') ? M.st.bpm : settings.bpm;   // what the display shows
+  function metroSetBpm(v) {
+    if (metroLocked()) return;
+    settings.bpm = clampInt(v, 30, 300, settings.bpm); saveSettings();
+    if (M.on && M.st) { M.st.bpm = settings.bpm; M.setBpm = settings.bpm; }   // a running tempo stair goes on from here
+    renderSetup();
+  }
+  holdRepeat($('mMinus'), () => metroSetBpm(metroBpm() - 1));
+  holdRepeat($('mPlus'), () => metroSetBpm(metroBpm() + 1));
+  $('mRange').addEventListener('input', (e) => metroSetBpm(e.target.value));
+  $('mHalf').addEventListener('click', () => metroSetBpm(Math.round(metroBpm() / 2)));
+  $('mDouble').addEventListener('click', () => metroSetBpm(metroBpm() * 2));
+  $('mTap').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (metroLocked()) return;
+    const t = performance.now(), T = M.taps;
+    if (T.length && t - T[T.length - 1] > 2000) T.length = 0;   // a pause starts a new count
+    T.push(t); if (T.length > 6) T.shift();
+    const b = $('mTap'); b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 90);
+    if (T.length >= 2) { const iv = T.slice(1).map((x, k) => x - T[k]); metroSetBpm(Math.round(60000 / median(iv))); }
+    b.textContent = T.length >= 2 ? `Tap · ${settings.bpm}` : 'Tap …';
+    clearTimeout(M.tapTimer); M.tapTimer = setTimeout(() => { b.textContent = 'Tap'; }, 2200);
+  });
+  $('mStart').addEventListener('click', () => { if (M.on) metroStop(); else metroStart(); });
+  $('metroBannerGo').addEventListener('click', () => showTab('met'));
+  $('metroBannerStop').addEventListener('click', () => metroStop());
+  function metroSel(id, fn) { $(id).addEventListener('change', (e) => { if (metroLocked()) { renderMetro(); return; } fn(e.target.value); saveSettings(); renderSetup(); renderMetro(); }); }
+  metroSel('mMeter', v => { if (METER_OPTS.some(m => m.id === v)) settings.meter = v; });
+  metroSel('mSub', v => { if (SUBDIVS[v]) settings.mSub = v; });
+  metroSel('mSound', v => { if (SOUNDS.some(x => x[0] === v)) { settings.mSound = v; if (!M.on) hearSound(); } });
+  metroSel('mSilOn', v => { settings.silOn = clampInt(v, 1, 4, 2); });
+  metroSel('mSilOff', v => { settings.silOff = clampInt(v, 1, 4, 2); });
+  metroSel('mGap', v => { const g = Number(v); if ([10, 20, 30, 50].includes(g)) settings.mGap = g; });
+  metroSel('mStep', v => { settings.stStep = clampInt(v, 1, 10, 5); });
+  metroSel('mBars', v => { settings.stBars = clampInt(v, 2, 8, 4); });
+  metroSel('mMax', v => { settings.stMax = clampInt(v, 31, 300, 160); });
+  $('mVol').addEventListener('input', (e) => { $('clickVol').value = e.target.value; $('clickVol').dispatchEvent(new Event('input')); });
+  $('mSubVol').addEventListener('input', (e) => { settings.mSubVol = clampInt(e.target.value, 0, 100, 60); saveSettings(); });
+  document.querySelectorAll('[data-mtrain]').forEach(b => b.addEventListener('click', () => {
+    if (metroLocked()) return;
+    settings.mTrain = b.dataset.mtrain; saveSettings(); renderMetro();
+  }));
+  // one bar to listen to, when the metronome is not running
+  let hearCtx = null, hearTimer = 0;
+  function hearSound() {
+    if (M.on || metroLocked()) return;
+    try {
+      if (!hearCtx) { const AC = window.AudioContext || window.webkitAudioContext; hearCtx = new AC(); }
+      const ac = hearCtx, g = ac.createGain(); g.gain.value = clickGain(); g.connect(ac.destination);
+      const t0 = ac.currentTime + 0.05, beat = 60 / settings.bpm, acc = accentsFor(settings.meter);
+      acc.slice(0, Math.max(1, Math.min(acc.length, Math.floor(4 / beat)))).forEach((l, j) => { const lv = lvName(l, j === 0); if (lv) playSound(ac, g, t0 + j * beat, settings.mSound, lv); });
+      clearTimeout(hearTimer); hearTimer = setTimeout(() => { if (hearCtx) { hearCtx.close().catch(() => {}); hearCtx = null; } }, 4800);
+    } catch (e) { /* no sound */ }
+  }
+  $('mHear').addEventListener('click', hearSound);
+  const TRAIN_HELP = {
+    off: '„Stille Takte“ lässt den Klick regelmäßig aussetzen, „Aussetzer“ lässt einzelne Schläge zufällig wegfallen, die „Tempo-Treppe“ steigert das Tempo stufenweise.',
+    silent: 'Der Klick setzt nach den Takten mit Klick aus, auch die Anzeige bleibt dann dunkel. Spiel weiter und hör, ob du beim Wiedereinsetzen noch drauf bist.',
+    gaps: 'Einzelne Schläge fallen zufällig weg, im ersten Takt nie. Je höher der Anteil, desto mehr musst du das Tempo selbst halten.',
+    ramp: 'Das Tempo steigt alle paar Takte bis zum Höchsttempo. Änderst du das Tempo zwischendurch, geht es von dort aus weiter.'
+  };
+  function renderMetro() {
+    if (!$('tab-met')) return;
+    const mi = meterOf(settings.meter), lock = metroLocked(), playing = M.on;
+    const bpmNow = metroBpm();
+    $('mBpm').textContent = bpmNow; $('mUnit').textContent = unitOf(mi.den); $('mRange').value = bpmNow;
+    $('mMeter').value = mi.id; $('mSound').value = settings.mSound;
+    Array.from($('mSub').options).forEach(o => { o.textContent = (SUB_LABELS[mi.den] || SUB_LABELS[4])[o.value]; });
+    $('mSub').value = settings.mSub;
+    $('mVol').value = settings.clickVol; $('mSubVol').value = settings.mSubVol; $('mSubVolBox').hidden = settings.mSub === '1';
+    document.querySelectorAll('[data-mtrain]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.mtrain === settings.mTrain)); b.disabled = lock; });
+    $('mSilentOpts').hidden = settings.mTrain !== 'silent'; $('mGapOpts').hidden = settings.mTrain !== 'gaps'; $('mRampOpts').hidden = settings.mTrain !== 'ramp';
+    $('mSilOn').value = String(settings.silOn); $('mSilOff').value = String(settings.silOff); $('mGap').value = String(settings.mGap);
+    $('mStep').value = String(settings.stStep); $('mBars').value = String(settings.stBars); $('mStepUnit').textContent = mi.den === 8 ? 'alle' : 'BPM alle';
+    const sel = $('mMax'); sel.textContent = ''; Array.from($('stMax').options).forEach(o => sel.append(o.cloneNode(true))); sel.value = $('stMax').value;
+    $('mTrainHelp').textContent = TRAIN_HELP[settings.mTrain];
+    ['mMinus', 'mPlus', 'mRange', 'mHalf', 'mDouble', 'mTap', 'mMeter', 'mSub', 'mSound', 'mHear', 'mSilOn', 'mSilOff', 'mGap', 'mStep', 'mBars', 'mMax'].forEach(id => { $(id).disabled = lock; });
+    $('mHear').disabled = lock || playing;                     // while it runs you hear the sound anyway
+    const st = $('mStart'); st.textContent = playing ? 'Stopp' : 'Start'; st.classList.toggle('danger', playing); st.classList.toggle('fill', !playing); st.disabled = lock && !playing;
+    if (!playing) $('mStatus').textContent = !lock ? M.msg : runKind === 'latency' ? 'Während der Latenz-Messung bleibt das Metronom aus.' : 'Während einer Aufnahme mit Klick spielt die Aufnahme den Klick.';
+    const n = $('mBeats').children.length, acc = accentsFor(settings.meter);
+    if (n !== mi.n || Array.from($('mBeats').children).some((b, j) => b.dataset.l !== String(acc[j]) || b.disabled !== lock) || $('mBeats').dataset.m !== mi.id) { renderMetroBeats(); $('mBeats').dataset.m = mi.id; }
+    if (!playing) lightMetro(-1, false);
+    $('tb-met').classList.toggle('playing', playing);
+    renderMetroBanner();
+  }
+  function renderMetroBanner() {
+    const b = $('metroBanner'); if (!b) return;
+    b.hidden = !M.on || currentTab === 'met';
+    if (!b.hidden) $('metroBannerText').textContent = `Metronom · ${M.st ? M.st.bpm : settings.bpm} ${unitOf(meterOf(settings.meter).den)}`;
+  }
+  (function fillMetroOptions() {
+    const add = (sel, list) => list.forEach(([v, t]) => { const o = document.createElement('option'); o.value = String(v); o.textContent = t; sel.append(o); });
+    add($('mMeter'), METER_OPTS.map(m => [m.id, m.label || m.id]));
+    add($('mSub'), ['1', '2', '3', '4', '6', 'sw'].map(v => [v, SUB_LABELS[4][v]]));
+    add($('mSound'), SOUNDS);
+    add($('mSilOn'), [1, 2, 3, 4].map(v => [v, String(v)]));
+    add($('mSilOff'), [1, 2, 3, 4].map(v => [v, String(v)]));
+    add($('mGap'), [10, 20, 30, 50].map(v => [v, v + ' %']));
+    add($('mStep'), [1, 2, 3, 5, 10].map(v => [v, '+' + v]));
+    add($('mBars'), [2, 4, 8].map(v => [v, String(v)]));
+  })();
+
   // ---------- tabs, instructions page, Android back button ----------
   // The other tabs sit one step "above" Aufnahme in the browser history, so the back button returns there
   // instead of leaving the app; the instructions page is one more step on top.
-  const TABS = ['rec', 'eval', 'hist', 'list', 'set'];
-  let currentTab = 'rec', helpOpen = false;
+  const TABS = ['rec', 'met', 'eval', 'hist', 'list', 'set'];
+  let currentTab = 'rec', helpOpen = false, lastPlayTab = 'rec';
   const tabScroll = {};
   function updateRecBanner() {
     const show = phase === 'session' && !!session && currentTab !== 'rec';
@@ -3827,10 +4324,13 @@ function analyzeFree3(onsets, opts) {
       if (monitoring) stopMonitor();
     }
     currentTab = name;
+    if (name === 'rec' || name === 'met') lastPlayTab = name;
     TABS.forEach(t => {
       $('tab-' + t).hidden = t !== name;
-      const b = $('tb-' + t); b.classList.toggle('on', t === name); b.setAttribute('aria-selected', String(t === name));
+      const b = $('tb-' + t); b.classList.toggle('on', t === name);
+      b.setAttribute(b.getAttribute('role') === 'tab' ? 'aria-selected' : 'aria-pressed', String(t === name));   // the gear is no tab
     });
+    renderMetroBanner();
     if (!o.fromPop) {
       const st = history.state || {}, onTop = !!(st.tab && st.tab !== 'rec');
       try {
@@ -3922,7 +4422,7 @@ function analyzeFree3(onsets, opts) {
       // a new version was installed while the app starts: show it right away (only if nothing is running yet)
       const hadController = !!navigator.serviceWorker.controller, openedAt = Date.now();
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (hadController && Date.now() - openedAt < 30000 && phase === 'idle' && !busy && !session) location.reload();
+        if (hadController && Date.now() - openedAt < 30000 && phase === 'idle' && !busy && !session && !M.on) location.reload();
       });
     });
   } else renderInstall(false);
@@ -3932,6 +4432,7 @@ function analyzeFree3(onsets, opts) {
   saveSettings();
   applyTheme();
   renderSetup();
+  renderMetro();
   renderHistory();
   resetLive();
   renderMeter(0, null);
